@@ -721,7 +721,7 @@ async function makePdf(o,btn){
       if(pg>0)pdf.addPage();pdf.addImage(part.toDataURL('image/jpeg',0.92),'JPEG',0,0,pw,part.height*pw/part.width);
     }
     const blobOut=pdf.output('blob');
-    await dl.save({filename:`Наряд-заказ ${o.number}.pdf`,data:blobOut});
+    await dl.save({filename:`CR-${o.number}.pdf`,data:blobOut});
   }catch(e){if(e&&e.code==='declined'){}else toast('PDF не получился'+(e&&e.message?': '+e.message:''))}
   finally{if(wrap)wrap.remove();btn.disabled=false;btn.textContent=old}
 }
