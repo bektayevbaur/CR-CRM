@@ -103,9 +103,10 @@ async function firebaseSession(ui) {
       if (started) { location.reload(); return; }       // вышли или сменили аккаунт
       if (!user) return ui.needLogin(signIn);
       const email = (user.email || '').toLowerCase();
-      let staff = null;
-      try { const s = await F.getDoc(F.doc(fs, 'staff', email)); staff = s.exists() ? s.data() : null; } catch (e) { staff = null; }
-      if (!staff) return ui.noAccess(email, signOut);
+      let staff = null, reason = 'not-in-staff';
+      try { const s = await F.getDoc(F.doc(fs, 'staff', email)); staff = s.exists() ? s.data() : null; }
+      catch (e) { reason = e.code || 'error'; console.error(e); }
+      if (!staff) return ui.noAccess(email, signOut, reason);
       started = true;
       resolve({ db, assets, downloads, signOut, demo: false,
         user: { uid: user.uid, email, name: staff.name || user.displayName || email, role: staff.role === 'admin' ? 'admin' : 'staff' } });

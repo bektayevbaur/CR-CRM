@@ -291,8 +291,13 @@ function gate(html){$('#tabs').hidden=true;$('#view').innerHTML=`<div class="gat
 const gateUI={
   needLogin(signIn){$('#sync').textContent='вход не выполнен';
     gate(`<p>Войдите рабочим Google-аккаунтом, чтобы открыть CRM.</p><button class="btn primary block" id="gIn">Войти через Google</button>`);$('#gIn').onclick=signIn},
-  noAccess(email,signOut){$('#sync').textContent='нет доступа';
-    gate(`<p>Аккаунт <b>${esc(email)}</b> не добавлен в список сотрудников.</p><p class="muted small">Попросите администратора добавить этот email в «Настройки → Сотрудники», затем войдите снова.</p><button class="btn block" id="gOut">Войти другим аккаунтом</button>`);$('#gOut').onclick=signOut},
+  noAccess(email,signOut,reason){$('#sync').textContent='нет доступа';
+    const msg=reason==='not-in-staff'
+      ?`<p>Аккаунт <b>${esc(email)}</b> не добавлен в список сотрудников.</p><p class="muted small">Попросите администратора добавить этот email в «Настройки → Сотрудники», затем войдите снова. Первого администратора добавляют в Firebase: Firestore → коллекция <code>staff</code> → документ с ID <code>${esc(email)}</code>, поле <code>role</code> = <code>admin</code>.</p>`
+      :reason==='permission-denied'
+      ?`<p>Вход выполнен как <b>${esc(email)}</b>, но база не пустила.</p><p class="muted small">Скорее всего, в Firebase не опубликованы правила: Firestore → Rules → вставить текст из файла <code>firestore.rules</code> → Publish. Затем обновите страницу.</p>`
+      :`<p>Вход выполнен как <b>${esc(email)}</b>, но не удалось проверить доступ.</p><p class="muted small">Ошибка: <code>${esc(reason)}</code>. Проверьте интернет и обновите страницу.</p>`;
+    gate(msg+`<button class="btn block" id="gOut">Войти другим аккаунтом</button>`);$('#gOut').onclick=signOut},
   notConfigured(){$('#sync').textContent='база не настроена';
     gate(`<p>База данных ещё не подключена: нужно заполнить файл <code>firebase-config.js</code> — инструкция в README.</p><a class="btn block" href="?demo">Открыть демо-режим</a><p class="muted small">В демо-режиме данные хранятся только до перезагрузки страницы.</p>`)},
   error(m){toast(m)}
