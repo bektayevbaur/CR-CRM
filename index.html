@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Clean Republic CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f2ee;--card:#ffffff;--ink:#15161a;--muted:#6c707a;--line:#e3e1db;--soft:#f7f6f3;
+  --accent:#2251ff;--accent-soft:#e8edff;--ok:#11875d;--ok-soft:#e3f5ec;--warn:#b86e00;--warn-soft:#fdf1dc;
+  --bad:#c8322b;--bad-soft:#fde8e6;--violet:#6b3fd4;--violet-soft:#efe9fd;
+  --r:16px;--shadow:0 1px 2px rgba(20,20,30,.05),0 6px 24px rgba(20,20,30,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,-apple-system,sans-serif;font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;background:rgba(243,242,238,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:36px;height:36px;border-radius:11px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;letter-spacing:.5px}
+.brand b{display:block;font-size:15px}
+.brand small{display:block;font-size:11.5px;color:var(--muted)}
+.brand small.on{color:var(--ok)}
+.top select{max-width:46vw;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 10px;font-weight:600;font-size:13px}
+main{max-width:1180px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:center;gap:4px;background:rgba(255,255,255,.96);
+  backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.tabs button{flex:1;max-width:150px;border:0;background:none;padding:6px 4px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer}
+.tabs button svg{width:22px;height:22px}
+.tabs button.on{color:var(--ink)}
+.tabs button.plus span.ic{width:44px;height:30px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center}
+.tabs button.plus.on span.ic{background:var(--ink)}
+h1{font-size:24px;margin:4px 0 14px;letter-spacing:-.3px}
+h2{font-size:16px;margin:0 0 10px}
+h3{font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:560px){.grid3{grid-template-columns:1fr 1fr}}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted)}
+input[type=text],input[type=tel],input[type=number],input[type=search],select,textarea{
+  width:100%;border:1px solid var(--line);background:var(--soft);border-radius:12px;padding:12px;font-size:15px;color:var(--ink);outline:none;font-weight:500}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:#fff}
+textarea{min-height:70px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 13px;font-size:13.5px;font-weight:600;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.sm{padding:5px 10px;font-size:12.5px}
+.chip .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{border:0;background:none;border-radius:9px;padding:10px 6px;font-weight:700;font-size:13.5px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.seg button.on.yes{background:var(--ok);color:#fff}
+.seg button.on.no{background:var(--bad);color:#fff}
+.btn{border:0;border-radius:12px;padding:13px 16px;font-weight:700;cursor:pointer;background:var(--soft);border:1px solid var(--line)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.btn.ghost{background:none}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.wa{background:#1fa855;color:#fff;border-color:#1fa855}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700;white-space:nowrap}
+.st-new{background:var(--accent-soft);color:var(--accent)}
+.st-work{background:var(--violet-soft);color:var(--violet)}
+.st-ready{background:var(--ok-soft);color:var(--ok)}
+.st-done{background:#ececec;color:#555}
+.st-cancel{background:var(--bad-soft);color:var(--bad)}
+.pay-no{background:var(--bad-soft);color:var(--bad)}
+.pay-part{background:var(--warn-soft);color:var(--warn)}
+.pay-ok{background:var(--ok-soft);color:var(--ok)}
+.orig-yes{background:var(--ok-soft);color:var(--ok)}
+.orig-no{background:var(--bad-soft);color:var(--bad)}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.toolbar input{flex:1;min-width:200px}
+.scroll-x{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.scroll-x::-webkit-scrollbar{display:none}
+.olist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.ocard{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:12px;display:flex;gap:12px;cursor:pointer;border:1px solid transparent}
+.ocard:hover{border-color:var(--line)}
+.thumb{width:72px;height:72px;border-radius:12px;background:var(--soft);flex:none;overflow:hidden;display:grid;place-items:center;color:#b8b6af}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.ocard .meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.ocard .t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ocard .s{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.count{background:var(--soft);border-radius:999px;padding:1px 7px;font-size:11.5px;margin-left:2px}
+.chip.on .count{background:rgba(255,255,255,.2)}
+.empty{text-align:center;color:var(--muted);padding:40px 16px}
+.section{margin-bottom:14px}
+.photos{display:flex;gap:10px;flex-wrap:wrap}
+.ph{position:relative;width:92px;height:92px;border-radius:14px;overflow:hidden;background:var(--soft)}
+.ph img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.ph .x{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:14px;line-height:24px}
+.ph.loading{display:grid;place-items:center;font-size:11px;color:var(--muted)}
+.addph{width:92px;height:92px;border-radius:14px;border:1.5px dashed #c9c6be;display:grid;place-items:center;text-align:center;cursor:pointer;color:var(--muted);font-size:12px;font-weight:600;background:var(--card)}
+.addph svg{width:24px;height:24px;display:block;margin:0 auto 4px}
+.slider{width:100%;accent-color:var(--accent)}
+.dirt{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.dirt b{font-size:15px}
+.dirtbar{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0 2px}
+.dirtbar i{height:8px;border-radius:4px;background:var(--line)}
+.dirtbar i.f1{background:#9bd3b5}.dirtbar i.f2{background:#c9d77a}.dirtbar i.f3{background:#f0c050}.dirtbar i.f4{background:#ec8c3c}.dirtbar i.f5{background:#d9493c}
+.tariffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.tariff{border:1.5px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;background:var(--card);position:relative}
+.tariff b{display:block;font-size:13.5px}
+.tariff span{font-size:13px;color:var(--muted);font-weight:600}
+.tariff.on{border-color:var(--accent);background:var(--accent-soft)}
+.tariff .hint{position:absolute;top:-8px;right:8px;background:var(--warn);color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px}
+.svc{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--card)}
+.svc.on{border-color:var(--accent);background:var(--accent-soft)}
+.svc input{width:18px;height:18px;accent-color:var(--accent)}
+.boxes{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+.box{border:1px solid var(--line);border-radius:10px;padding:9px 0;text-align:center;font-weight:700;font-size:13px;cursor:pointer;background:var(--card)}
+.box.busy{background:var(--soft);color:#bbb;cursor:not-allowed;text-decoration:line-through}
+.box.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sum{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom));z-index:5;background:var(--ink);color:#fff;border-radius:18px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.sum .lbl{font-size:12px;opacity:.7}
+.sum .val{font-size:22px;font-weight:800}
+.sum .btn{background:var(--accent);color:#fff;border:0}
+.found{display:flex;align-items:center;gap:10px;background:var(--ok-soft);color:var(--ok);border-radius:12px;padding:10px 12px;font-weight:600;font-size:13.5px}
+.found.newc{background:var(--accent-soft);color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .v{font-size:22px;font-weight:800;margin-top:4px;letter-spacing:-.3px}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar .h{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:4px}
+.bar .tr{height:8px;background:var(--soft);border-radius:4px;overflow:hidden}
+.bar .tr i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.clist{display:flex;flex-direction:column;gap:8px}
+.crow{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);cursor:pointer}
+.av{width:38px;height:38px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:800;flex:none}
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet.hidden{display:none}
+.sheet-bg{position:absolute;inset:0;background:rgba(15,16,20,.45)}
+.sheet-body{position:relative;background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom))}
+@media (min-width:700px){.sheet{align-items:center}.sheet-body{border-radius:22px;max-height:88vh}}
+.sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
+.close{border:0;background:var(--card);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;box-shadow:var(--shadow);flex:none}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-weight:600;text-align:right}
+.lightbox{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.9);display:grid;place-items:center}
+.lightbox img{max-width:96vw;max-height:90vh;border-radius:8px}
+.nz{background:#fff;color:#16171b;font-family:Manrope,sans-serif;padding:34px 38px;width:100%;max-width:794px;margin:0 auto;font-size:12.5px;line-height:1.45;border-radius:10px;box-shadow:var(--shadow)}
+.nz .nzh{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid #16171b;padding-bottom:14px;margin-bottom:16px}
+.nz .co{display:flex;gap:12px;align-items:center}
+.nz .co .lg{width:44px;height:44px;border-radius:12px;background:#16171b;color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px}
+.nz .co b{font-size:17px;display:block}
+.nz .num{text-align:right}
+.nz .num .t{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#777;font-weight:700}
+.nz .num .n{font-size:24px;font-weight:800;letter-spacing:-.4px}
+.nz .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.nz .blk{border:1px solid #e2e0da;border-radius:10px;padding:10px 12px}
+.nz .blk h4{margin:0 0 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:#888}
+.nz table{width:100%;border-collapse:collapse}
+.nz td{padding:3px 0;vertical-align:top}
+.nz td.k{color:#777;width:44%}
+.nz td.v{font-weight:600}
+.nz .prices td{padding:6px 0;border-bottom:1px solid #eee}
+.nz .prices td.r{text-align:right;font-weight:600;white-space:nowrap}
+.nz .prices tr.tot td{border-bottom:0;border-top:2px solid #16171b;font-size:15px;font-weight:800;padding-top:8px}
+.nz .phs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:6px}
+.nz .phs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;display:block}
+.nz .dl{display:flex;gap:3px;margin-top:3px}.nz .dl i{flex:1;height:6px;border-radius:3px;background:#e6e4de}
+.nz .terms{font-size:10.5px;color:#555;margin:14px 0 0;padding-left:16px}
+.nz .terms li{margin-bottom:3px}
+.nz .sign{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:26px;font-size:11px;color:#666}
+.nz .sign div{border-top:1px solid #16171b;padding-top:5px}
+.nz .foot{margin-top:16px;text-align:center;font-size:10px;color:#999}
+@media (max-width:560px){.nz{padding:20px 16px;font-size:11.5px}.nz .cols{grid-template-columns:1fr}.nz .phs{grid-template-columns:repeat(3,1fr)}}
+#nzCapture{position:fixed;left:-10000px;top:0;width:794px}
+#nzCapture .nz{max-width:none;width:794px;box-shadow:none;border-radius:0;padding:34px 38px;font-size:12.5px}
+#nzCapture .nz .cols{grid-template-columns:1fr 1fr}#nzCapture .nz .phs{grid-template-columns:repeat(6,1fr)}
+#toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-weight:600;font-size:14px;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:12px}
+.hr{height:1px;background:var(--line);margin:4px 0}
+.paylist{display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.paylist div{display:flex;justify-content:space-between}
+.tag{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:2px 8px;font-size:12px;font-weight:600;margin:2px 4px 2px 0}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">CR</span><div><b>Clean Republic</b><small id="sync">подключение…</small></div></div>
+  <select id="pointSel" aria-label="Точка"></select>
+</header>
+<main id="view"></main>
+<nav class="tabs" id="tabs">
+  <button data-tab="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="10" rx="2"/></svg>Заказы</button>
+  <button data-tab="clients"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M17 4a4 4 0 0 1 0 8M22 21c0-3-1.5-5-4-5.7"/></svg>Клиенты</button>
+  <button data-tab="new" class="plus"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" style="width:20px;height:20px"><path d="M12 5v14M5 12h14"/></svg></span>Приём</button>
+  <button data-tab="cash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Касса</button>
+  <button data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Настройки</button>
+</nav>
+<div id="sheet" class="sheet hidden"><div class="sheet-bg" data-close="1"></div><div class="sheet-body" id="sheetBody"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ===================== Справочники по умолчанию ===================== */
+const DEFAULTS = {
+  tariffs:[{name:'STANDARD',price:5990},{name:'PREMIUM',price:6990},{name:'FROST MODE',price:8990},{name:'EXTRA',price:0}],
+  services:[{name:'Отбеливание подошвы',price:2000},{name:'Покраска замши/нубука',price:3000},{name:'Защитная пропитка',price:1500},{name:'Удаление запаха',price:1000},{name:'Замена шнурков',price:500},{name:'Подклейка подошвы',price:2500}],
+  points:['Clean Rep','VICCO','BRUX','Nike Outlet','All Stars Mega Alma-Ata'],
+  masters:['Руслан'], managers:['Камила','Дана'],
+  channels:['Instagram','2GIS','WhatsApp','Рекомендация','Повторный клиент','Проходил мимо','Партнёр (точка)','Другое'],
+  boxes:60, masterRate:600, masterFixed:120000, extraBrands:[],
+  company:'Clean Republic', companyInfo:'Химчистка и уход за обувью · Алматы', companyPhone:'',
+  terms:['Клиент ознакомлен с состоянием обуви. Дефекты, отмеченные в наряд-заказе и на фото, имелись до чистки.',
+    'Исполнитель не отвечает за скрытые дефекты, проявившиеся при чистке: износ материала, слабый клей, нестойкие красители, ранее проведённый ремонт.',
+    'Полное удаление застарелых и сложных загрязнений не гарантируется.',
+    'Обувь выдаётся по номеру наряд-заказа или по телефону клиента. Бесплатное хранение после уведомления о готовности — 30 дней.',
+    'Подписывая наряд-заказ, клиент соглашается с условиями оказания услуги.']
+};
+const MAX_PHOTOS=6;
+const PHOTO_HINTS=['Общий вид','Сбоку','Подошва','Носок','Пятка','Дефект'];
+const STATUSES=[
+  {k:'new',n:'Принят',c:'st-new'},{k:'work',n:'В работе',c:'st-work'},{k:'ready',n:'Готов',c:'st-ready'},
+  {k:'done',n:'Выдан',c:'st-done'},{k:'cancel',n:'Отменён',c:'st-cancel'}];
+const ACTIVE=['new','work','ready'];
+const TYPES=['Кроссовки','Кеды','Ботинки','Сапоги','Челси','Туфли','Лоферы','Мокасины','Угги','Дутики','Слипоны','Сандалии','Шлёпанцы','Бутсы','Сумка','Другое'];
+const MATERIALS=['Текстиль','Сетка (mesh)','Гладкая кожа','Замша','Нубук','Лаковая кожа','Экокожа','Мех','Резина','Комбинированный'];
+const DELICATE=['Замша','Нубук','Мех','Лаковая кожа'];
+const COLORS=[['Белый','#ffffff'],['Чёрный','#111111'],['Серый','#9a9a9a'],['Бежевый','#e3d3b4'],['Коричневый','#7a4b2a'],['Синий','#2a52be'],['Голубой','#8ec5ff'],['Красный','#d63a2f'],['Зелёный','#3f8f4f'],['Хаки','#7d7a4e'],['Жёлтый','#f2cd2e'],['Оранжевый','#f08a24'],['Розовый','#f3a3c0'],['Фиолетовый','#7d4bc2'],['Мульти','linear-gradient(135deg,#f33,#fc3,#3c6,#39f)']];
+const PROBLEMS=['Пыль','Грязь','Пятна','Соль / реагенты','Жёлтая подошва','Запах','Следы краски','Масло / жир','Кофе / напитки','Трава','Плесень','Потёртости','Заломы','Порывы','Отклеилась подошва','Стёрта стелька'];
+const DIRT=['','Лёгкая','Умеренная','Средняя','Сильная','Очень сильная'];
+const PAY_METHODS=['Наличные','Терминал / карта','Kaspi Pay'];
+const BRANDS_BASE=['Nike','Jordan','Adidas','Yeezy','New Balance','Asics','Onitsuka Tiger','Puma','Reebok','Converse','Vans','Saucony','Hoka','On','Salomon','Mizuno','Brooks','Under Armour','Fila','Skechers','Li-Ning','Anta','361°','Xtep','Peak','Diadora','Karhu','Le Coq Sportif','Kappa','Umbro','Lotto','Ellesse','Champion','Altra','Topo Athletic','Inov-8','Norda','Merrell','Columbia','The North Face','Arc\'teryx','Mammut','La Sportiva','Scarpa','Lowa','Meindl','Hanwag','Keen','Teva','Timberland','Dr. Martens','UGG','Clarks','Ecco','Geox','Camper','Birkenstock','Crocs','Sorel','Moon Boot','Hunter','Red Wing','Wolverine','Caterpillar','Palladium','Superga','Keds','Sperry','Sebago','Cole Haan','Veja','Axel Arigato','Autry','Golden Goose','Common Projects','Philippe Model','Premiata','Hogan','Tod\'s','Lacoste','Tommy Hilfiger','Calvin Klein','Hugo Boss','Ralph Lauren','Michael Kors','Coach','Guess','DKNY','Steve Madden','Aldo','Armani','Emporio Armani','EA7','Gucci','Prada','Miu Miu','Balenciaga','Louis Vuitton','Dior','Chanel','Hermès','Valentino','Alexander McQueen','Givenchy','Versace','Fendi','Burberry','Bottega Veneta','Saint Laurent','Celine','Loewe','Dolce & Gabbana','Christian Louboutin','Jimmy Choo','Manolo Blahnik','Stuart Weitzman','Gianvito Rossi','Aquazzura','Sergio Rossi','Casadei','René Caovilla','Salvatore Ferragamo','Bally','Santoni','Church\'s','Tricker\'s','Grenson','Loro Piana','Brunello Cucinelli','Moncler','Stone Island','Off-White','Palm Angels','Amiri','Rick Owens','Maison Margiela','Dsquared2','Philipp Plein','Kenzo','Jacquemus','AMI Paris','Represent','Fear of God','Essentials','BAPE','Stüssy','Supreme','Kith','Sacai','Comme des Garçons','Y-3','Yohji Yamamoto','Mihara Yasuhiro','Visvim','Baldinini','Cesare Paciotti','Pollini','Fabi','Rieker','Tamaris','Marco Tozzi','Caprice','Ara','Gabor','Lloyd','Bugatti','Mephisto','Pikolinos','Paul Green','Kazar','Lasocki','CCC','Ralf Ringer','Ekonika','Respect','Carlo Pazolini','Tervolina','Thomas Münz','Zara','Massimo Dutti','Mango','H&M','Pull&Bear','Bershka','Stradivarius','Uniqlo','Native','Allbirds','Hey Dude','Без бренда'];
+
+/* ===================== Утилиты ===================== */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>(Math.round(+n||0)).toLocaleString('ru-RU')+' ₸';
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const normPhone=p=>{let d=String(p||'').replace(/\D/g,'');if(d.length===11&&d[0]==='8')d='7'+d.slice(1);if(d.length===10)d='7'+d;return d};
+const CODES=[{c:'7',n:'🇰🇿 +7',len:10},{c:'996',n:'🇰🇬 +996',len:9},{c:'998',n:'🇺🇿 +998',len:9},{c:'992',n:'🇹🇯 +992',len:9},{c:'993',n:'🇹🇲 +993',len:8},{c:'994',n:'🇦🇿 +994',len:9},{c:'90',n:'🇹🇷 +90',len:10},{c:'86',n:'🇨🇳 +86',len:11},{c:'971',n:'🇦🇪 +971',len:9},{c:'',n:'🌍 Другая',len:0}];
+const codeInfo=cc=>CODES.find(x=>x.c===cc)||CODES[CODES.length-1];
+/* В базе номер хранится только цифрами с кодом страны: 77071234567, 996555123456 — без +, пробелов и 8 */
+function fullPhone(cc,local){let d=String(local||'').replace(/\D/g,'');
+  if(cc==='7'){if(d.length===11&&(d[0]==='8'||d[0]==='7'))d=d.slice(1)}
+  else if(cc&&d.startsWith(cc)&&d.length>codeInfo(cc).len)d=d.slice(cc.length);
+  return cc+d}
+function phoneOk(cc,local){const full=fullPhone(cc,local),ci=codeInfo(cc);return ci.len?full.length===cc.length+ci.len:full.length>=10&&full.length<=15}
+function splitPhone(d){d=String(d||'').replace(/\D/g,'');const m=[...CODES].filter(x=>x.c).sort((a,b)=>b.c.length-a.c.length).find(x=>d.startsWith(x.c)&&d.length===x.c.length+x.len);return m?{cc:m.c,phone:d.slice(m.c.length)}:{cc:'',phone:d}}
+function fmtLocal(cc,d){d=d.replace(/\D/g,'');if(cc==='7'){d=d.slice(0,10);return [d.slice(0,3),d.slice(3,6),d.slice(6,8),d.slice(8,10)].filter(Boolean).join(' ')}
+  return d.replace(/(\d{3})(?=\d)/g,'$1 ')}
+const fmtPhone=d=>{if(!d)return'';const p=splitPhone(d);return p.cc?`+${p.cc} ${fmtLocal(p.cc,p.phone)}`:'+'+d};
+const fmtDate=t=>t?new Date(t).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+const st=k=>STATUSES.find(s=>s.k===k)||STATUSES[0];
+const blob=id=>'/_blob/'+encodeURIComponent(id);
+const tabId=Math.random().toString(36).slice(2);
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),2400)}
+function paid(o){return (o.payments||[]).reduce((a,p)=>a+(+p.amount||0),0)}
+function payState(o){const p=paid(o),t=+o.total||0;if(t<=0&&p<=0)return{k:'pay-ok',n:'Без оплаты'};if(p>=t)return{k:'pay-ok',n:'Оплачен'};if(p>0)return{k:'pay-part',n:'Частично'};return{k:'pay-no',n:'Не оплачен'}}
+
+/* ===================== Состояние ===================== */
+const S={db:null,assets:null,uid:null,canWrite:true,orders:[],clients:[],cfgDoc:{},tab:'orders',filter:'active',q:'',cq:'',
+  point:lsGet('cr_point')||'',period:'today',live:false,form:null};
+const cfg=()=>Object.assign({},DEFAULTS,S.cfgDoc||{});
+const brands=()=>[...new Set([...BRANDS_BASE,...(cfg().extraBrands||[])])].sort((a,b)=>a.localeCompare(b,'ru'));
+
+/* ===================== Подключение к базе ===================== */
+let loadTimer=setTimeout(()=>{if(!S.live){$('#sync').textContent='нет связи с базой';}},10000);
+(async function init(){
+  renderPoints(); go(S.tab);
+  if(!window.claude||!claude.use){$('#sync').textContent='база недоступна';return}
+  const [db,user,assets]=await Promise.all([claude.use('db'),claude.use('user'),claude.use('assets')]);
+  S.db=db;S.assets=assets;
+  if(user){try{S.uid=await user.id()}catch(e){} try{const c=await user.can('data.write'); if(c===false)S.canWrite=false}catch(e){}}
+  S.ready=true;
+  if(!db){$('#sync').textContent='нет доступа к базе';clearTimeout(loadTimer);rerender();return}
+  rerender();
+  db.doc('config/main').onSnapshot(s=>{S.cfgDoc=s.exists?s.data():{};renderPoints();if(S.tab==='new'&&!document.activeElement?.closest?.('#view'))rerender();else if(S.tab==='settings'&&!document.activeElement?.closest?.('#view'))rerender()},onErr);
+  db.collection('orders').orderBy('createdAt','desc').limit(800).onSnapshot(s=>{
+    S.orders=s.docs.map(d=>({id:d.id,...d.data()}));
+    if(!s.metadata.fromCache){S.live=true;clearTimeout(loadTimer);const el=$('#sync');el.textContent='● онлайн';el.className='on'}
+    refresh();
+  },onErr);
+  db.collection('clients').orderBy('updatedAt','desc').limit(1000).onSnapshot(s=>{S.clients=s.docs.map(d=>({id:d.id,...d.data()}));refresh()},onErr);
+})();
+function rerender(){const y=window.scrollY;go(S.tab,true);window.scrollTo(0,y)}
+function dbBanner(){if(!S.ready||S.db)return'';return`<div class="banner">Нет подключения к базе данных, поэтому сохранять нельзя. Откройте приложение по ссылке в браузере или в приложении Claude, войдя в свой аккаунт. Сотрудникам нужен доступ уровня «Contributor» или выше.</div>`}
+function onErr(e){clearTimeout(loadTimer);$('#sync').textContent='ошибка базы: '+(e&&e.code||'');}
+function refresh(){if(S.tab==='orders')renderOrders();else if(S.tab==='clients')renderClients();else if(S.tab==='cash')renderCash();
+  const op=$('#sheetBody')?.dataset.order; if(op&&!$('#sheet').classList.contains('hidden'))openOrder(op,true);}
+
+/* ===================== Навигация ===================== */
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)go(b.dataset.tab)});
+function go(tab,keep){
+  if(S.tab==='new'&&tab!=='new'&&S.form&&S.form.dirty&&!keep){/* оставляем черновик */}
+  S.tab=tab;$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  if(tab==='orders')renderOrders();else if(tab==='new')renderNew();else if(tab==='clients')renderClients();else if(tab==='cash')renderCash();else renderSettings();
+  if(!keep)window.scrollTo(0,0);
+}
+function renderPoints(){const sel=$('#pointSel'),pts=cfg().points;
+  if(!S.point||!pts.includes(S.point))S.point=pts[0]||'';
+  sel.innerHTML=`<option value="__all">Все точки</option>`+pts.map(p=>`<option ${p===S.point?'selected':''}>${esc(p)}</option>`).join('');
+  if(S.point==='__all')sel.value='__all';}
+$('#pointSel').addEventListener('change',e=>{S.point=e.target.value;lsSet('cr_point',S.point);refresh()});
+const inPoint=o=>S.point==='__all'||!S.point||o.point===S.point;
+
+/* ===================== Заказы ===================== */
+function renderOrders(){
+  const list=S.orders.filter(inPoint);
+  const cnt=k=>k==='active'?list.filter(o=>ACTIVE.includes(o.status)).length:k==='all'?list.length:list.filter(o=>o.status===k).length;
+  const filters=[['active','Активные'],...STATUSES.map(s=>[s.k,s.n]),['all','Все']];
+  const q=S.q.trim().toLowerCase();
+  let shown=list.filter(o=>S.filter==='all'?true:S.filter==='active'?ACTIVE.includes(o.status):o.status===S.filter);
+  if(q)shown=shown.filter(o=>[o.number,o.clientName,o.clientPhone,o.shoe?.brand,o.box].join(' ').toLowerCase().includes(q));
+  $('#view').innerHTML=`
+  ${dbBanner()}${S.canWrite?'':'<div class="banner">У вас доступ только для просмотра.</div>'}
+  <div class="row between"><h1>Заказы</h1><span class="muted small">${S.point==='__all'?'все точки':esc(S.point)}</span></div>
+  <div class="toolbar"><input type="search" id="oq" placeholder="Поиск: №, имя, телефон, бренд, бокс" value="${esc(S.q)}"></div>
+  <div class="scroll-x section">${filters.map(([k,n])=>`<span class="chip sm ${S.filter===k?'on':''}" data-f="${k}">${n}<span class="count">${cnt(k)}</span></span>`).join('')}</div>
+  ${shown.length?`<div class="olist">${shown.map(orderCard).join('')}</div>`:`<div class="empty">${S.live?'Заказов нет. Нажмите «Приём», чтобы оформить первый.':'Загрузка…'}</div>`}`;
+  $('#oq').addEventListener('input',e=>{S.q=e.target.value;const pos=e.target.selectionStart;renderOrders();const i=$('#oq');i.focus();i.setSelectionRange(pos,pos)});
+  $$('[data-f]').forEach(c=>c.onclick=()=>{S.filter=c.dataset.f;renderOrders()});
+  $$('.ocard').forEach(c=>c.onclick=()=>openOrder(c.dataset.id));
+}
+function orderCard(o){const s=st(o.status),p=payState(o),ph=(o.photos||[])[0];
+  return `<div class="ocard" data-id="${esc(o.id)}">
+    <div class="thumb">${ph?`<img loading="lazy" src="${blob(ph)}" alt="">`:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17h18v2H3zM3 17c0-3 1-5 4-6l4-3 3 2c2 1 5 1 7 3v4"/></svg>'}</div>
+    <div class="meta">
+      <div class="row between" style="gap:6px"><span class="t">№${esc(o.number)} · ${esc(o.shoe?.brand||'—')}</span><span class="pill ${s.c}">${s.n}</span></div>
+      <div class="s">${esc(o.clientName||'')} · ${esc(fmtPhone(o.clientPhone))}</div>
+      <div class="row" style="gap:6px"><span class="pill ${p.k}">${p.n}</span><b style="font-size:13.5px">${money(o.total)}</b>${o.box?`<span class="muted small">бокс ${esc(o.box)}</span>`:''}${o.original===false?'<span class="pill orig-no">не ориг.</span>':''}</div>
+      <div class="s">${fmtDate(o.createdAt)}${o.point&&S.point==='__all'?' · '+esc(o.point):''}</div>
+    </div></div>`}
+
+/* ===================== Карточка заказа ===================== */
+function openSheet(html,attrs={}){const b=$('#sheetBody');b.innerHTML=html;b.dataset.order=attrs.order||'';b.dataset.client=attrs.client||'';$('#sheet').classList.remove('hidden');document.body.style.overflow='hidden'}
+function closeSheet(){$('#sheet').classList.add('hidden');$('#sheetBody').dataset.order='';document.body.style.overflow=''}
+$('#sheet').addEventListener('click',e=>{if(e.target.dataset.close)closeSheet()});
+function lightbox(src){const d=document.createElement('div');d.className='lightbox';d.innerHTML=`<img src="${src}" alt="">`;d.onclick=()=>d.remove();document.body.appendChild(d)}
+
+function openOrder(id,isRefresh){
+  const o=S.orders.find(x=>x.id===id);if(!o){if(!isRefresh)toast('Заказ не найден');return}
+  const body=$('#sheetBody');const keepScroll=isRefresh?body.scrollTop:0;
+  if(isRefresh&&body.contains(document.activeElement)&&document.activeElement.tagName!=='BUTTON')return;
+  const s=st(o.status),p=payState(o),due=Math.max(0,(+o.total||0)-paid(o)),c=cfg();
+  const sh=o.shoe||{};
+  const waText=o.status==='ready'
+    ?`Здравствуйте, ${o.clientName||''}! Ваша обувь ${sh.brand||''} готова и ждёт вас в Clean Republic (${o.point||''}). Заказ №${o.number}.${due>0?' К оплате: '+money(due)+'.':''} Спасибо!`
+    :`Здравствуйте, ${o.clientName||''}! Это Clean Republic. По вашему заказу №${o.number} (${sh.brand||''}): `;
+  const waLink=o.clientPhone?`https://wa.me/${o.clientPhone}?text=${encodeURIComponent(waText)}`:'';
+  openSheet(`
+  <div class="sheet-head"><div><h1 style="margin:0">№${esc(o.number)}</h1><div class="row small muted" style="margin-top:4px;gap:6px"><span class="pill ${s.c}">${s.n}</span><span class="pill ${p.k}">${p.n}</span>${esc(o.point||'')} · ${fmtDate(o.createdAt)}</div></div><button class="close" data-close="1">✕</button></div>
+  <div class="stack">
+    <div class="card"><h3>Статус</h3><div class="chips">${STATUSES.map(x=>`<span class="chip ${o.status===x.k?'on':''}" data-st="${x.k}">${x.n}</span>`).join('')}</div>
+      ${waLink?`<div style="margin-top:12px"><a class="btn wa block" href="${waLink}" target="_blank" rel="noopener">${o.status==='ready'?'Сообщить в WhatsApp, что готово':'Написать клиенту в WhatsApp'}</a><div class="small muted" style="margin-top:6px">Номер: ${esc(fmtPhone(o.clientPhone))}</div></div>`:''}
+    </div>
+    <div class="card"><div class="row between"><h3 style="margin:0">Клиент</h3><button class="btn ghost small" id="toClient" style="padding:6px 8px">Карточка →</button></div>
+      <div style="margin-top:8px;font-weight:700;font-size:16px">${esc(o.clientName||'—')}</div><div class="muted">${esc(fmtPhone(o.clientPhone))}</div></div>
+    <div class="card"><h3>Обувь</h3>
+      <dl class="kv"><dt>Бренд</dt><dd>${esc(sh.brand||'—')}</dd><dt>Подлинность</dt><dd>${o.original===true?'<span class="pill orig-yes">Оригинал</span>':o.original===false?'<span class="pill orig-no">Не оригинал</span>':'<span class="muted">не указано</span>'}</dd>
+      <dt>Тип</dt><dd>${esc(sh.type||'—')}</dd><dt>Размер</dt><dd>${esc(sh.size||'—')}</dd><dt>Материал</dt><dd>${esc((sh.materials||[]).join(', ')||'—')}</dd><dt>Цвет</dt><dd>${esc((sh.colors||[]).join(', ')||'—')}</dd></dl>
+      <div class="hr" style="margin:12px 0"></div>
+      <div class="dirt"><span class="muted small">Загрязнённость</span><b>${o.dirt||'—'} · ${DIRT[o.dirt]||''}</b></div>
+      <div class="dirtbar">${[1,2,3,4,5].map(i=>`<i class="${i<=(o.dirt||0)?'f'+o.dirt:''}"></i>`).join('')}</div>
+      ${(o.problems||[]).length?`<div style="margin-top:8px">${o.problems.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+    </div>
+    <div class="card"><h3>Фото до чистки</h3><div class="photos">${(o.photos||[]).map(ph=>`<div class="ph"><img src="${blob(ph)}" data-lb alt=""></div>`).join('')||'<span class="muted small">нет фото</span>'}</div>
+      <h3 style="margin-top:14px">Фото после чистки</h3><div class="photos" id="afterPh">${(o.photosAfter||[]).map(ph=>`<div class="ph"><img src="${blob(ph)}" data-lb alt=""></div>`).join('')}
+      ${S.assets&&S.canWrite&&(o.photosAfter||[]).length<MAX_PHOTOS?`<label class="addph"><input type="file" accept="image/*" multiple hidden id="afterIn"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Добавить</span></label>`:''}</div></div>
+    <div class="card"><h3>Стоимость</h3>
+      <dl class="kv"><dt>Тариф ${esc(o.tariff||'')}</dt><dd>${money(o.tariffPrice)}</dd>
+      ${(o.services||[]).map(x=>`<dt>${esc(x.name)}</dt><dd>${money(x.price)}</dd>`).join('')}
+      ${o.discountPct?`<dt>Скидка ${o.discountPct}%${o.promo?' ('+esc(o.promo)+')':''}</dt><dd>−${money(o.discountSum)}</dd>`:''}
+      ${o.bonusUsed?`<dt>Списано бонусов</dt><dd>−${money(o.bonusUsed)}</dd>`:''}
+      <dt style="color:var(--ink);font-weight:800">Итого</dt><dd style="font-size:18px">${money(o.total)}</dd>
+      <dt>Оплачено</dt><dd>${money(paid(o))}</dd><dt>Остаток</dt><dd style="color:${due>0?'var(--bad)':'var(--ok)'}">${money(due)}</dd></dl>
+      ${(o.payments||[]).length?`<div class="hr" style="margin:12px 0"></div><div class="paylist">${o.payments.map(x=>`<div><span class="muted">${fmtDate(x.at)} · ${esc(x.method)}</span><b>${money(x.amount)}</b></div>`).join('')}</div>`:''}
+      ${S.canWrite&&due>0?`<div class="hr" style="margin:12px 0"></div><h3>Принять оплату</h3>
+        <div class="seg" id="payM" style="margin-bottom:8px">${PAY_METHODS.map((m,i)=>`<button class="${i===0?'on':''}" data-m="${esc(m)}">${esc(m)}</button>`).join('')}</div>
+        <div class="row" style="flex-wrap:nowrap"><input type="number" id="payAmt" inputmode="numeric" value="${due}"><button class="btn ok" id="payBtn">Принять</button></div>`:''}
+    </div>
+    <div class="card"><h3>Работа</h3><div class="grid2">
+      <label class="f">Бокс<select id="eBox" ${S.canWrite?'':'disabled'}><option value="">—</option>${Array.from({length:+c.boxes||0},(_,i)=>String(i+1)).map(b=>`<option ${String(o.box)===b?'selected':''}>${b}</option>`).join('')}</select></label>
+      <label class="f">Мастер<select id="eMaster" ${S.canWrite?'':'disabled'}><option value="">—</option>${c.masters.map(m=>`<option ${o.master===m?'selected':''}>${esc(m)}</option>`).join('')}</select></label>
+      <label class="f">Менеджер<select id="eMgr" ${S.canWrite?'':'disabled'}><option value="">—</option>${c.managers.map(m=>`<option ${o.manager===m?'selected':''}>${esc(m)}</option>`).join('')}</select></label>
+      <label class="f">Канал<input type="text" value="${esc(o.channel||'')}" disabled></label></div>
+      ${o.pickup?.on?`<div class="small" style="margin-top:10px"><b>Забор:</b> ${esc(o.pickup.address||'')}</div>`:''}
+      ${o.delivery?.on?`<div class="small" style="margin-top:4px"><b>Доставка:</b> ${esc(o.delivery.address||'')}</div>`:''}
+      <label class="f" style="margin-top:10px">Комментарий<textarea id="eCom" ${S.canWrite?'':'disabled'}>${esc(o.comment||'')}</textarea></label>
+      ${S.canWrite?'<button class="btn dark block" id="eSave" style="margin-top:10px">Сохранить изменения</button>':''}
+    </div>
+    <button class="btn dark block" id="toNz">📄 Наряд-заказ</button>
+    <div class="small muted" style="text-align:center">Создан ${fmtDate(o.createdAt)}${o.readyAt?' · готов '+fmtDate(o.readyAt):''}${o.issuedAt?' · выдан '+fmtDate(o.issuedAt):''}</div>
+  </div>`,{order:id});
+  body.scrollTop=keepScroll;
+  $$('[data-lb]',body).forEach(i=>i.onclick=()=>lightbox(i.src));
+  $('#toClient').onclick=()=>openClient(o.clientPhone);
+  $('#toNz').onclick=()=>openNz(o.id);
+  if(S.canWrite){
+    $$('[data-st]',body).forEach(ch=>ch.onclick=async()=>{const k=ch.dataset.st;if(k===o.status)return;
+      const u={status:k,updatedAt:Date.now()};if(k==='ready'&&!o.readyAt)u.readyAt=Date.now();if(k==='done'&&!o.issuedAt)u.issuedAt=Date.now();
+      if(k==='done'&&!o.readyAt)u.readyAt=Date.now();
+      await upd(o.id,u,'Статус: '+st(k).n)});
+    const pm=$('#payM');if(pm)pm.onclick=e=>{const b=e.target.closest('button');if(!b)return;$$('button',pm).forEach(x=>x.classList.toggle('on',x===b))};
+    const pb=$('#payBtn');if(pb)pb.onclick=async()=>{const a=Math.round(+$('#payAmt').value||0);if(a<=0)return toast('Введите сумму');
+      const m=$('#payM .on').dataset.m;pb.disabled=true;await upd(o.id,{payments:[...(o.payments||[]),{amount:a,method:m,at:Date.now(),point:o.point||''}],updatedAt:Date.now()},'Оплата принята')};
+    $('#eSave').onclick=async()=>{await upd(o.id,{box:$('#eBox').value,master:$('#eMaster').value,manager:$('#eMgr').value,comment:$('#eCom').value.trim(),updatedAt:Date.now()},'Сохранено')};
+    const ai=$('#afterIn');if(ai)ai.onchange=async()=>{const room=MAX_PHOTOS-(o.photosAfter||[]).length;const files=[...ai.files].slice(0,Math.max(0,room));if(!files.length)return toast('Уже '+MAX_PHOTOS+' фото');toast('Загружаю фото…');
+      const ids=[];for(const f of files){try{const r=await S.assets.upload(await compress(f));ids.push(r.id)}catch(e){toast('Фото не загрузилось')}}
+      if(ids.length)await upd(o.id,{photosAfter:[...(o.photosAfter||[]),...ids],updatedAt:Date.now()},'Фото добавлены')};
+  }
+}
+async function upd(id,data,msg){try{await S.db.doc('orders/'+id).update(data);toast(msg)}catch(e){handleWriteErr(e)}}
+function handleWriteErr(e){const c=e&&e.code;if(c==='invalid_argument'){S.canWrite=false;toast('Нет прав на изменение')}else if(c==='quota_exceeded')toast('База заполнена: '+(e.message||''));else toast('Не сохранилось, попробуйте ещё раз')}
+
+/* ===================== Приём заказа ===================== */
+function blankForm(prefill){return Object.assign({dirty:false,cc:'7',phone:'',first:'',last:'',instagram:'',clientExists:false,clientBonus:0,
+  brand:'',original:null,type:'Кроссовки',size:'',materials:[],colors:[],photos:[],uploading:0,dirt:2,problems:[],
+  tariff:'STANDARD',tariffTouched:false,services:[],discountPct:0,promo:'',bonusUsed:0,box:'',channel:'',master:'',manager:'',
+  pickup:false,pickupAddr:'',delivery:false,deliveryAddr:'',comment:''},prefill||{})}
+function suggestedTariff(f){return f.materials.some(m=>DELICATE.includes(m))?'PREMIUM':'STANDARD'}
+function calc(f){const c=cfg();const t=c.tariffs.find(x=>x.name===f.tariff)||{price:0};
+  const svc=f.services.map(n=>c.services.find(s=>s.name===n)).filter(Boolean);
+  const sub=(+t.price||0)+svc.reduce((a,s)=>a+(+s.price||0),0);
+  const disc=Math.round(sub*(Math.min(100,Math.max(0,+f.discountPct||0)))/100);
+  const bonus=Math.min(Math.max(0,+f.bonusUsed||0),f.clientBonus||0,sub-disc);
+  return{tariffPrice:+t.price||0,svc,sub,disc,bonus,total:Math.max(0,sub-disc-bonus)}}
+function busyBoxes(){return new Set(S.orders.filter(o=>ACTIVE.includes(o.status)&&o.box&&(o.point===S.point||S.point==='__all')).map(o=>String(o.box)))}
+
+function renderNew(){
+  if(!S.form)S.form=blankForm();
+  const f=S.form,c=cfg(),busy=busyBoxes(),sug=suggestedTariff(f);
+  if(!f.tariffTouched)f.tariff=sug;
+  const top=brands().filter(b=>['Nike','Adidas','New Balance','Jordan','Asics','Puma','Converse','Vans','Hoka','On','Salomon','Timberland','UGG','Dr. Martens'].includes(b));
+  const R=calc(f);
+  $('#view').innerHTML=`
+  ${dbBanner()}${S.canWrite?'':'<div class="banner">У вас доступ только для просмотра: сохранить заказ не получится.</div>'}
+  <div class="row between"><h1>Приём заказа</h1>${f.dirty?'<button class="btn ghost small" id="reset" style="padding:6px 10px">Очистить</button>':''}</div>
+  <div class="stack">
+  <div class="card stack"><h2>Клиент</h2>
+    <label class="f">Телефон<div class="row" style="flex-wrap:nowrap;gap:8px">
+      <select id="fCc" style="width:auto;flex:none">${CODES.map(x=>`<option value="${x.c}" ${x.c===f.cc?'selected':''}>${x.n}</option>`).join('')}</select>
+      <input type="tel" id="fPhone" inputmode="tel" placeholder="${f.cc==='7'?'707 123 45 67':f.cc?'номер без кода':'полный номер с кодом страны'}" value="${esc(fmtLocal(f.cc,f.phone))}" autocomplete="off" ${S.tab==='new'&&!f.phone?'autofocus':''}></div></label>
+    <div id="clientInfo"></div>
+    <div class="grid2"><label class="f">Имя<input type="text" id="fFirst" value="${esc(f.first)}" autocomplete="off"></label>
+    <label class="f">Фамилия<input type="text" id="fLast" value="${esc(f.last)}" autocomplete="off"></label></div>
+    <label class="f">Instagram (необязательно)<input type="text" id="fIg" value="${esc(f.instagram)}" placeholder="@username" autocomplete="off"></label>
+  </div>
+
+  <div class="card stack"><h2>Обувь</h2>
+    <label class="f">Бренд<input type="text" id="fBrand" list="brandList" value="${esc(f.brand)}" placeholder="Начните вводить: Nike, Gucci, Ecco…" autocomplete="off"></label>
+    <datalist id="brandList">${brands().map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
+    <div class="scroll-x">${top.map(b=>`<span class="chip sm ${f.brand===b?'on':''}" data-brand="${esc(b)}">${esc(b)}</span>`).join('')}</div>
+    <div><div class="muted small" style="font-weight:600;margin-bottom:6px">Подлинность</div>
+      <div class="seg" id="fOrig"><button data-v="1" class="${f.original===true?'on yes':''}">✓ Оригинал</button><button data-v="0" class="${f.original===false?'on no':''}">✕ Не оригинал</button><button data-v="" class="${f.original===null?'on':''}">Не знаю</button></div></div>
+    <div><div class="muted small" style="font-weight:600;margin-bottom:6px">Тип</div><div class="chips" id="fType">${TYPES.map(t=>`<span class="chip sm ${f.type===t?'on':''}" data-v="${esc(t)}">${esc(t)}</span>`).join('')}</div></div>
+    <label class="f" style="max-width:160px">Размер<input type="text" id="fSize" inputmode="decimal" value="${esc(f.size)}" placeholder="42"></label>
+    <div><div class="muted small" style="font-weight:600;margin-bottom:6px">Материал (можно несколько)</div><div class="chips" id="fMat">${MATERIALS.map(t=>`<span class="chip sm ${f.materials.includes(t)?'on':''}" data-v="${esc(t)}">${esc(t)}</span>`).join('')}</div></div>
+    <div><div class="muted small" style="font-weight:600;margin-bottom:6px">Цвет</div><div class="chips" id="fCol">${COLORS.map(([n,h])=>`<span class="chip sm ${f.colors.includes(n)?'on':''}" data-v="${esc(n)}"><span class="dot" style="background:${h}"></span>${esc(n)}</span>`).join('')}</div></div>
+  </div>
+
+  <div class="card stack"><div class="row between"><h2 style="margin:0">Фото обуви</h2>${S.assets?`<span class="pill st-new" id="phCount">0 из ${MAX_PHOTOS}</span>`:''}</div>
+    ${S.assets?`<div class="photos" id="fPhotos"></div><div class="small muted">До ${MAX_PHOTOS} фото: нажмите на любую ячейку — можно снять камерой или выбрать сразу несколько из галереи.</div>`
+      :`<div class="small muted">${!S.ready?'Подключаюсь…':S.db?'Загрузка фото недоступна для вашего уровня доступа (нужен «Contributor» или выше).':'Фото станут доступны после подключения к базе.'}</div>`}
+  </div>
+
+  <div class="card stack"><h2>Загрязнённость</h2>
+    <div><div class="dirt"><span class="muted small">Степень</span><b id="dirtLbl">${f.dirt} · ${DIRT[f.dirt]}</b></div>
+    <input type="range" min="1" max="5" step="1" value="${f.dirt}" id="fDirt" class="slider">
+    <div class="dirtbar" id="dirtBar">${[1,2,3,4,5].map(i=>`<i class="${i<=f.dirt?'f'+f.dirt:''}"></i>`).join('')}</div></div>
+    <div><div class="muted small" style="font-weight:600;margin-bottom:6px">Что нужно убрать</div><div class="chips" id="fProb">${PROBLEMS.map(t=>`<span class="chip sm ${f.problems.includes(t)?'on':''}" data-v="${esc(t)}">${esc(t)}</span>`).join('')}</div></div>
+  </div>
+
+  <div class="card stack"><h2>Тариф и услуги</h2>
+    <div class="tariffs" id="fTar">${c.tariffs.map(t=>`<div class="tariff ${f.tariff===t.name?'on':''}" data-v="${esc(t.name)}">${t.name===sug&&!f.tariffTouched?'':t.name===sug?'<span class="hint">совет</span>':''}<b>${esc(t.name)}</b><span>${money(t.price)}</span></div>`).join('')}</div>
+    ${sug==='PREMIUM'?'<div class="small muted">Для замши, нубука, меха и лака советуем PREMIUM.</div>':''}
+    <div class="stack" id="fSvc" style="gap:8px">${c.services.map(s=>`<label class="svc ${f.services.includes(s.name)?'on':''}"><span class="row" style="gap:10px"><input type="checkbox" data-v="${esc(s.name)}" ${f.services.includes(s.name)?'checked':''}>${esc(s.name)}</span><b>${money(s.price)}</b></label>`).join('')}</div>
+    <div class="grid3"><label class="f">Скидка, %<input type="number" id="fDisc" inputmode="numeric" min="0" max="100" value="${f.discountPct||''}" placeholder="0"></label>
+    <label class="f">Промокод<input type="text" id="fPromo" value="${esc(f.promo)}" autocomplete="off"></label>
+    <label class="f">Бонусы (есть ${money(f.clientBonus)})<input type="number" id="fBonus" inputmode="numeric" min="0" value="${f.bonusUsed||''}" placeholder="0" ${f.clientBonus>0?'':'disabled'}></label></div>
+  </div>
+
+  <div class="card stack"><h2>Бокс</h2>
+    <div class="boxes" id="fBox">${Array.from({length:+c.boxes||0},(_,i)=>String(i+1)).map(b=>`<div class="box ${busy.has(b)?'busy':''} ${f.box===b?'on':''}" data-v="${b}">${b}</div>`).join('')}</div>
+    <div class="small muted">Зачёркнутые боксы заняты активными заказами этой точки.</div>
+  </div>
+
+  <div class="card stack"><h2>Детали</h2>
+    <div class="grid2">
+      <label class="f">Канал продаж<select id="fCh"><option value="">—</option>${c.channels.map(x=>`<option ${f.channel===x?'selected':''}>${esc(x)}</option>`).join('')}</select></label>
+      <label class="f">Менеджер<select id="fMgr"><option value="">—</option>${c.managers.map(x=>`<option ${f.manager===x?'selected':''}>${esc(x)}</option>`).join('')}</select></label>
+      <label class="f">Мастер<select id="fMaster"><option value="">—</option>${c.masters.map(x=>`<option ${f.master===x?'selected':''}>${esc(x)}</option>`).join('')}</select></label>
+    </div>
+    <label class="svc ${f.pickup?'on':''}"><span class="row" style="gap:10px"><input type="checkbox" id="fPick" ${f.pickup?'checked':''}>Забор от клиента</span></label>
+    ${f.pickup?`<input type="text" id="fPickA" placeholder="Адрес забора" value="${esc(f.pickupAddr)}">`:''}
+    <label class="svc ${f.delivery?'on':''}"><span class="row" style="gap:10px"><input type="checkbox" id="fDel" ${f.delivery?'checked':''}>Доставка клиенту</span></label>
+    ${f.delivery?`<input type="text" id="fDelA" placeholder="Адрес доставки" value="${esc(f.deliveryAddr)}">`:''}
+    <label class="f">Комментарий<textarea id="fCom" placeholder="Особые пожелания, дефекты, которые были до чистки">${esc(f.comment)}</textarea></label>
+  </div>
+
+  <div class="sum"><div><div class="lbl" id="sumLbl">${R.disc||R.bonus?`${money(R.sub)} − скидки`:'Итого'}</div><div class="val" id="sumVal">${money(R.total)}</div></div>
+    <button class="btn" id="fSave">Оформить заказ</button></div>
+  </div>`;
+  bindNew();renderPhotos();lookupClient(false);
+}
+function upSum(){const R=calc(S.form);$('#sumVal').textContent=money(R.total);$('#sumLbl').textContent=R.disc||R.bonus?`${money(R.sub)} − скидки`:'Итого'}
+function mark(){S.form.dirty=true}
+function bindNew(){
+  const f=S.form,v=$('#view');
+  const txt=(id,key,cb)=>{const el=$(id);if(el)el.addEventListener('input',()=>{f[key]=el.value;mark();cb&&cb()})};
+  const pi=$('#fPhone');
+  pi.addEventListener('input',()=>{let raw=pi.value.trim();
+    if(raw.startsWith('+')||raw.startsWith('00')){const d=raw.replace(/\D/g,'').replace(/^00/,'');
+      const m=[...CODES].filter(x=>x.c).sort((a,b)=>b.c.length-a.c.length).find(x=>d.startsWith(x.c));
+      if(m){f.cc=m.c;$('#fCc').value=m.c;raw=d.slice(m.c.length)}}
+    let d=raw.replace(/\D/g,'');if(f.cc==='7'&&d.length===11&&(d[0]==='8'||d[0]==='7'))d=d.slice(1);
+    f.phone=d;pi.value=fmtLocal(f.cc,d);mark();lookupClient(true)});
+  $('#fCc').onchange=e=>{f.cc=e.target.value;pi.placeholder=f.cc==='7'?'707 123 45 67':f.cc?'номер без кода':'полный номер с кодом страны';pi.value=fmtLocal(f.cc,f.phone);mark();lookupClient(true);pi.focus()};txt('#fFirst','first');txt('#fLast','last');txt('#fIg','instagram');
+  txt('#fBrand','brand',()=>$$('[data-brand]').forEach(c=>c.classList.toggle('on',c.dataset.brand===f.brand)));
+  txt('#fSize','size');txt('#fPromo','promo');txt('#fCom','comment');txt('#fPickA','pickupAddr');txt('#fDelA','deliveryAddr');
+  txt('#fDisc','discountPct',upSum);txt('#fBonus','bonusUsed',upSum);
+  $$('[data-brand]').forEach(c=>c.onclick=()=>{f.brand=c.dataset.brand;$('#fBrand').value=f.brand;mark();$$('[data-brand]').forEach(x=>x.classList.toggle('on',x===c))});
+  $('#fOrig').onclick=e=>{const b=e.target.closest('button');if(!b)return;f.original=b.dataset.v===''?null:b.dataset.v==='1';mark();
+    $$('#fOrig button').forEach(x=>{x.className='';if(x===b)x.className='on'+(f.original===true?' yes':f.original===false?' no':'')})};
+  const single=(id,key,after)=>{$(id).onclick=e=>{const c=e.target.closest('[data-v]');if(!c)return;f[key]=c.dataset.v;mark();$$(id+' [data-v]').forEach(x=>x.classList.toggle('on',x===c));after&&after()}};
+  const multi=(id,key,after)=>{$(id).onclick=e=>{const c=e.target.closest('[data-v]');if(!c)return;const val=c.dataset.v,a=f[key];const i=a.indexOf(val);i>=0?a.splice(i,1):a.push(val);c.classList.toggle('on',i<0);mark();after&&after()}};
+  single('#fType','type');multi('#fCol','colors');multi('#fProb','problems');
+  multi('#fMat','materials',()=>{if(!f.tariffTouched){renderNewKeep()}});
+  $('#fTar').onclick=e=>{const c=e.target.closest('[data-v]');if(!c)return;f.tariff=c.dataset.v;f.tariffTouched=true;mark();$$('#fTar .tariff').forEach(x=>x.classList.toggle('on',x===c));upSum()};
+  $('#fSvc').onchange=e=>{const cb=e.target;if(!cb.dataset.v)return;const a=f.services,i=a.indexOf(cb.dataset.v);cb.checked?(i<0&&a.push(cb.dataset.v)):(i>=0&&a.splice(i,1));cb.closest('.svc').classList.toggle('on',cb.checked);mark();upSum()};
+  $('#fDirt').oninput=e=>{f.dirt=+e.target.value;mark();$('#dirtLbl').textContent=f.dirt+' · '+DIRT[f.dirt];$('#dirtBar').innerHTML=[1,2,3,4,5].map(i=>`<i class="${i<=f.dirt?'f'+f.dirt:''}"></i>`).join('')};
+  $('#fBox').onclick=e=>{const c=e.target.closest('.box');if(!c||c.classList.contains('busy'))return;f.box=f.box===c.dataset.v?'':c.dataset.v;mark();$$('#fBox .box').forEach(x=>x.classList.toggle('on',x.dataset.v===f.box))};
+  ['fCh:channel','fMgr:manager','fMaster:master'].forEach(p=>{const[id,k]=p.split(':');$('#'+id).onchange=e=>{f[k]=e.target.value;mark()}});
+  $('#fPick').onchange=e=>{f.pickup=e.target.checked;mark();renderNewKeep()};
+  $('#fDel').onchange=e=>{f.delivery=e.target.checked;mark();renderNewKeep()};
+  const r=$('#reset');if(r)r.onclick=()=>{S.form=blankForm();renderNew()};
+  $('#fSave').onclick=saveOrder;
+}
+function renderNewKeep(){const y=window.scrollY;renderNew();window.scrollTo(0,y)}
+function lookupClient(fromTyping){
+  const f=S.form,d=fullPhone(f.cc,f.phone),box=$('#clientInfo');if(!box)return;
+  if(!phoneOk(f.cc,f.phone)){box.innerHTML='';f.clientExists=false;f.clientBonus=0;return}
+  const cl=S.clients.find(c=>c.id===d);
+  const done=cl=>{
+    if(cl){f.clientExists=true;f.clientBonus=+cl.bonus||0;
+      if(fromTyping||!f.first){f.first=cl.first||'';f.last=cl.last||'';f.instagram=cl.instagram||'';$('#fFirst').value=f.first;$('#fLast').value=f.last;$('#fIg').value=f.instagram}
+      const n=S.orders.filter(o=>o.clientPhone===d).length;
+      box.innerHTML=`<div class="found"><span class="av" style="background:#fff">${esc((cl.first||'?')[0])}</span><div>Постоянный клиент: ${esc(cl.first||'')} ${esc(cl.last||'')}<div class="small" style="font-weight:500">${n} заказ(ов) · бонусы ${money(cl.bonus)}</div></div></div>`;
+      const bi=$('#fBonus');if(bi){bi.disabled=!(f.clientBonus>0);bi.closest('label').firstChild.textContent=`Бонусы (есть ${money(f.clientBonus)})`}
+    }else{f.clientExists=false;f.clientBonus=0;box.innerHTML='<div class="found newc">Новый клиент — будет создан при оформлении</div>'}
+  };
+  if(cl)return done(cl);
+  if(S.db){S.db.doc('clients/'+d).get().then(s=>{if(fullPhone(S.form.cc,S.form.phone)===d)done(s.exists?{id:d,...s.data()}:null)}).catch(()=>done(null))}else done(null);
+}
+function renderPhotos(){const el=$('#fPhotos');if(!el)return;const f=S.form;
+  const used=f.photos.length+f.uploading,left=MAX_PHOTOS-used;
+  const cnt=$('#phCount');if(cnt)cnt.textContent=`${f.photos.length} из ${MAX_PHOTOS}`;
+  el.innerHTML=f.photos.map((id,i)=>`<div class="ph"><img src="${blob(id)}" data-lb alt=""><button class="x" data-rm="${i}">✕</button></div>`).join('')
+   +Array.from({length:f.uploading},()=>'<div class="ph loading">загрузка…</div>').join('')
+   +Array.from({length:Math.max(0,left)},(_,i)=>`<label class="addph"><input type="file" accept="image/*" multiple hidden class="phIn"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>${PHOTO_HINTS[used+i]||'Фото'}</span></label>`).join('');
+  $$('[data-lb]',el).forEach(i=>i.onclick=()=>lightbox(i.src));
+  $$('[data-rm]',el).forEach(b=>b.onclick=()=>{f.photos.splice(+b.dataset.rm,1);renderPhotos()});
+  $$('.phIn',el).forEach(inp=>inp.onchange=async e=>{
+    let files=[...e.target.files];if(!files.length)return;
+    const room=MAX_PHOTOS-f.photos.length-f.uploading;
+    if(files.length>room){toast(`Можно добавить ещё ${room} фото — лишние пропущены`);files=files.slice(0,room)}
+    if(!files.length)return;
+    mark();f.uploading+=files.length;renderPhotos();
+    await Promise.all(files.map(async file=>{
+      try{const r=await S.assets.upload(await compress(file));f.photos.push(r.id)}
+      catch(err){toast('Фото не загрузилось'+(err&&err.message?': '+err.message:''))}
+      f.uploading--;renderPhotos()}));
+  });
+}
+async function compress(file){try{const bmp=await createImageBitmap(file);const s=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+  const c=document.createElement('canvas');c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+  return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',0.82))}catch(e){return file}}
+async function nextNumber(){const ref=S.db.doc('meta/counter');
+  for(let i=0;i<6;i++){try{const r=await ref.acquire({holder:S.uid||tabId,ttlMs:4000});
+    if(r.acquired){const s=await ref.get();const n=(s.exists?+s.data().n||0:0)+1;await ref.set({n});return n}}catch(e){}
+    await sleep(300+Math.random()*400)}
+  return +String(Date.now()).slice(-6)}
+async function saveOrder(){
+  const f=S.form,d=fullPhone(f.cc,f.phone),btn=$('#fSave');
+  if(!phoneOk(f.cc,f.phone))return toast(f.cc==='7'?'Номер: 10 цифр после +7':'Проверьте номер телефона');
+  if(!f.first.trim())return toast('Укажите имя клиента');
+  if(!f.brand.trim())return toast('Укажите бренд');
+  if(f.uploading)return toast('Дождитесь загрузки фото');
+  if(S.point==='__all')return toast('Выберите точку вверху экрана');
+  if(!S.db)return toast(S.ready?'Нет подключения к базе — войдите в аккаунт':'Подключаюсь к базе, подождите пару секунд');
+  if(!S.canWrite)return toast('У вас доступ только для просмотра');
+  btn.disabled=true;btn.textContent='Сохраняю…';
+  try{
+    const now=Date.now(),R=calc(f);
+    const cref=S.db.doc('clients/'+d);const cs=await cref.get();
+    const base={phone:d,first:f.first.trim(),last:f.last.trim(),instagram:f.instagram.trim(),updatedAt:now};
+    if(cs.exists){const cur=cs.data();await cref.update({...base,bonus:Math.max(0,(+cur.bonus||0)-R.bonus)})}
+    else await cref.set({...base,bonus:0,comment:'',createdAt:now});
+    const brand=f.brand.trim();
+    if(!brands().includes(brand)){const eb=[...(cfg().extraBrands||[]),brand];
+      try{const cd=S.db.doc('config/main');const cur=await cd.get();if(cur.exists)await cd.update({extraBrands:eb});else await cd.set({extraBrands:eb})}catch(e){}}
+    const number=await nextNumber();
+    const order={number,point:S.point,status:'new',clientPhone:d,clientName:(f.first.trim()+' '+f.last.trim()).trim(),
+      shoe:{brand,type:f.type,size:f.size.trim(),materials:f.materials,colors:f.colors},original:f.original,
+      photos:f.photos,photosAfter:[],dirt:f.dirt,problems:f.problems,
+      tariff:f.tariff,tariffPrice:R.tariffPrice,services:R.svc.map(s=>({name:s.name,price:+s.price||0})),
+      discountPct:+f.discountPct||0,discountSum:R.disc,promo:f.promo.trim(),bonusUsed:R.bonus,total:R.total,payments:[],
+      box:f.box,channel:f.channel,master:f.master,manager:f.manager,
+      pickup:{on:f.pickup,address:f.pickupAddr.trim()},delivery:{on:f.delivery,address:f.deliveryAddr.trim()},
+      comment:f.comment.trim(),createdAt:now,updatedAt:now,createdBy:S.uid||''};
+    const ref=S.db.collection('orders').doc();await ref.set(order);
+    const keepClient={cc:f.cc,phone:f.phone,first:f.first,last:f.last,instagram:f.instagram};
+    S.form=blankForm();
+    openSheet(`<div class="sheet-head"><div><h1 style="margin:0">Заказ №${number} оформлен</h1><div class="muted" style="margin-top:4px">${esc(order.clientName)} · ${esc(brand)} · ${money(order.total)}</div></div><button class="close" data-close="1">✕</button></div>
+      <div class="stack"><button class="btn dark block" id="sNz">📄 Наряд-заказ</button><button class="btn primary block" id="sOpen">Открыть заказ и принять оплату</button>
+      <button class="btn block" id="sMore">Ещё пара для этого клиента</button><button class="btn ghost block" data-close="1">Готово</button></div>`);
+    $('#sOpen').onclick=()=>openOrder(ref.id);
+    $('#sNz').onclick=()=>openNz(ref.id,{...order,id:ref.id});
+    $('#sMore').onclick=()=>{S.form=blankForm(keepClient);S.form.dirty=true;closeSheet();renderNew()};
+    renderNew();
+  }catch(e){handleWriteErr(e);btn.disabled=false;btn.textContent='Оформить заказ'}
+}
+
+/* ===================== Наряд-заказ ===================== */
+function nzHTML(o){const c=cfg(),sh=o.shoe||{},due=Math.max(0,(+o.total||0)-paid(o)),p=payState(o);
+  const row=(k,v)=>v?`<tr><td class="k">${k}</td><td class="v">${v}</td></tr>`:'';
+  const d=new Date(o.createdAt||Date.now());
+  const ds=d.toLocaleDateString('ru-RU',{day:'2-digit',month:'long',year:'numeric'})+', '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  const orig=o.original===true?'Оригинал':o.original===false?'Не оригинал':'Не определено';
+  const photos=(o.photos||[]).slice(0,6);
+  return `<div class="nz">
+   <div class="nzh"><div class="co"><span class="lg">CR</span><div><b>${esc(c.company)}</b><span style="color:#777">${esc(c.companyInfo||'')}</span>${c.companyPhone?`<div style="color:#777">${esc(c.companyPhone)}</div>`:''}</div></div>
+    <div class="num"><div class="t">Наряд-заказ</div><div class="n">№ ${esc(o.number)}</div><div style="color:#777">${esc(ds)}</div><div style="color:#777">Точка: ${esc(o.point||'—')}</div></div></div>
+   <div class="cols">
+    <div class="blk"><h4>Клиент</h4><table>${row('Имя',esc(o.clientName||'—'))}${row('Телефон',esc(fmtPhone(o.clientPhone)))}
+      ${o.pickup?.on?row('Забор',esc(o.pickup.address||'да')):''}${o.delivery?.on?row('Доставка',esc(o.delivery.address||'да')):''}</table></div>
+    <div class="blk"><h4>Приём</h4><table>${row('Бокс',esc(o.box||'—'))}${row('Менеджер',esc(o.manager||'—'))}${row('Мастер',esc(o.master||'—'))}${row('Статус',esc(st(o.status).n))}</table></div>
+   </div>
+   <div class="blk" style="margin-bottom:14px"><h4>Изделие</h4>
+    <div class="cols" style="margin:0"><table>${row('Бренд',esc(sh.brand||'—'))}${row('Подлинность',esc(orig))}${row('Тип',esc(sh.type||'—'))}${row('Размер',esc(sh.size||'—'))}</table>
+     <table>${row('Материал',esc((sh.materials||[]).join(', ')||'—'))}${row('Цвет',esc((sh.colors||[]).join(', ')||'—'))}
+      <tr><td class="k">Загрязнённость</td><td class="v">${o.dirt||'—'} из 5 · ${esc(DIRT[o.dirt]||'')}<div class="dl">${[1,2,3,4,5].map(i=>`<i style="${i<=(o.dirt||0)?'background:'+['','#9bd3b5','#c9d77a','#f0c050','#ec8c3c','#d9493c'][o.dirt]:''}"></i>`).join('')}</div></td></tr></table></div>
+    ${(o.problems||[]).length?`<div style="margin-top:6px"><span style="color:#777">Загрязнения и дефекты: </span><b>${esc(o.problems.join(', '))}</b></div>`:''}
+    ${o.comment?`<div style="margin-top:4px"><span style="color:#777">Комментарий: </span>${esc(o.comment)}</div>`:''}
+    ${photos.length?`<div class="phs">${photos.map(id=>`<img src="${blob(id)}" crossorigin="anonymous" alt="">`).join('')}</div>`:''}
+   </div>
+   <div class="blk"><h4>Услуги и оплата</h4><table class="prices">
+    <tr><td>Чистка, тариф ${esc(o.tariff||'')}</td><td class="r">${money(o.tariffPrice)}</td></tr>
+    ${(o.services||[]).map(x=>`<tr><td>${esc(x.name)}</td><td class="r">${money(x.price)}</td></tr>`).join('')}
+    ${o.discountPct?`<tr><td>Скидка ${o.discountPct}%${o.promo?' (промокод '+esc(o.promo)+')':''}</td><td class="r">− ${money(o.discountSum)}</td></tr>`:''}
+    ${o.bonusUsed?`<tr><td>Оплачено бонусами</td><td class="r">− ${money(o.bonusUsed)}</td></tr>`:''}
+    <tr class="tot"><td>Итого к оплате</td><td class="r">${money(o.total)}</td></tr>
+    <tr><td style="color:#777">Оплачено${(o.payments||[]).length?' ('+esc([...new Set(o.payments.map(x=>x.method))].join(', '))+')':''}</td><td class="r">${money(paid(o))}</td></tr>
+    <tr><td style="color:#777">Остаток</td><td class="r" style="color:${due>0?'#c8322b':'#11875d'}">${due>0?money(due):'Оплачено полностью'}</td></tr></table></div>
+   ${(c.terms||[]).length?`<ol class="terms">${c.terms.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>`:''}
+   <div class="sign"><div>Принял (менеджер): ${esc(o.manager||'')}</div><div>С условиями согласен (клиент)</div></div>
+   <div class="foot">${esc(c.company)} · наряд-заказ № ${esc(o.number)} · сохраните до получения обуви</div>
+  </div>`}
+function openNz(id,fallback){
+  const o=S.orders.find(x=>x.id===id)||fallback;if(!o)return toast('Заказ не найден');
+  const due=Math.max(0,(+o.total||0)-paid(o));
+  const txt=`Здравствуйте, ${o.clientName||''}! Ваш наряд-заказ № ${o.number} в ${cfg().company}: ${o.shoe?.brand||''}, тариф ${o.tariff||''}. Сумма: ${money(o.total)}${due>0&&due<(+o.total||0)?', остаток '+money(due):''}. Мы сообщим, когда обувь будет готова.`;
+  openSheet(`<div class="sheet-head"><div><h1 style="margin:0">Наряд-заказ</h1><div class="muted small">№ ${esc(o.number)}</div></div><button class="close" data-close="1">✕</button></div>
+   <div class="stack">
+    <div class="grid2"><button class="btn primary" id="nzPdf">Скачать PDF</button>${o.clientPhone?`<a class="btn wa" href="https://wa.me/${o.clientPhone}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">WhatsApp клиенту</a>`:''}</div>
+    <div class="small muted">На iPhone после «Скачать PDF» откроется меню «Поделиться» — оттуда файл можно сразу отправить в WhatsApp.</div>
+    ${nzHTML(o)}
+    <button class="btn ghost block" id="nzBack">← К заказу</button>
+   </div>`,{order:''});
+  $('#nzBack').onclick=()=>S.orders.find(x=>x.id===id)?openOrder(id):closeSheet();
+  $('#nzPdf').onclick=()=>makePdf(o,$('#nzPdf'));
+}
+function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`))return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+async function makePdf(o,btn){
+  const dl=await claude.use('downloads');if(!dl)return toast('Скачивание недоступно в этом окне');
+  btn.disabled=true;const old=btn.textContent;btn.textContent='Готовлю PDF…';
+  let wrap;
+  try{
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    wrap=document.createElement('div');wrap.id='nzCapture';wrap.innerHTML=nzHTML(o);document.body.appendChild(wrap);
+    await Promise.all($$('img',wrap).map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})));
+    if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+    const canvas=await html2canvas(wrap.firstElementChild,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4'});
+    const pw=210,ph=297,imgH=canvas.height*pw/canvas.width;
+    const pageCanvasH=Math.floor(canvas.width*ph/pw);
+    for(let y=0,pg=0;y<canvas.height;y+=pageCanvasH,pg++){
+      const part=document.createElement('canvas');part.width=canvas.width;part.height=Math.min(pageCanvasH,canvas.height-y);
+      const ctx=part.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,part.width,part.height);ctx.drawImage(canvas,0,-y);
+      if(pg>0)pdf.addPage();pdf.addImage(part.toDataURL('image/jpeg',0.92),'JPEG',0,0,pw,part.height*pw/part.width);
+    }
+    const blobOut=pdf.output('blob');
+    await dl.save({filename:`Наряд-заказ ${o.number}.pdf`,data:blobOut});
+  }catch(e){if(e&&e.code==='declined'){}else toast('PDF не получился'+(e&&e.message?': '+e.message:''))}
+  finally{if(wrap)wrap.remove();btn.disabled=false;btn.textContent=old}
+}
+
+/* ===================== Клиенты ===================== */
+function renderClients(){
+  const q=S.cq.trim().toLowerCase(),qd=q.replace(/\D/g,'');
+  let list=S.clients;
+  if(q)list=list.filter(c=>(c.first+' '+c.last+' '+(c.instagram||'')).toLowerCase().includes(q)||(qd&&c.id.includes(qd)));
+  const stats={};S.orders.forEach(o=>{const s=stats[o.clientPhone]||(stats[o.clientPhone]={n:0,sum:0});s.n++;s.sum+=paid(o)});
+  $('#view').innerHTML=`<div class="row between"><h1>Клиенты</h1><span class="muted small">${S.clients.length}</span></div>
+  <div class="toolbar"><input type="search" id="cq" placeholder="Имя, телефон или Instagram" value="${esc(S.cq)}"></div>
+  ${list.length?`<div class="clist">${list.slice(0,300).map(c=>{const s=stats[c.id]||{n:0,sum:0};return`<div class="crow" data-c="${esc(c.id)}">
+    <div class="row" style="flex-wrap:nowrap"><span class="av">${esc((c.first||'?')[0].toUpperCase())}</span><div><b>${esc(c.first)} ${esc(c.last||'')}</b><div class="small muted">${esc(fmtPhone(c.id))}${c.instagram?' · '+esc(c.instagram):''}</div></div></div>
+    <div style="text-align:right"><b>${s.n} зак.</b><div class="small muted">${money(s.sum)}</div></div></div>`}).join('')}</div>`
+  :`<div class="empty">${S.live?'Клиентов пока нет — они появятся после первого заказа.':'Загрузка…'}</div>`}`;
+  $('#cq').addEventListener('input',e=>{S.cq=e.target.value;const p=e.target.selectionStart;renderClients();const i=$('#cq');i.focus();i.setSelectionRange(p,p)});
+  $$('[data-c]').forEach(r=>r.onclick=()=>openClient(r.dataset.c));
+}
+async function openClient(phone){
+  let c=S.clients.find(x=>x.id===phone);
+  if(!c&&S.db){try{const s=await S.db.doc('clients/'+phone).get();if(s.exists)c={id:phone,...s.data()}}catch(e){}}
+  if(!c)return toast('Клиент не найден');
+  const os=S.orders.filter(o=>o.clientPhone===phone),sum=os.reduce((a,o)=>a+paid(o),0);
+  const wa=`https://wa.me/${phone}`;
+  openSheet(`<div class="sheet-head"><div class="row" style="flex-wrap:nowrap"><span class="av" style="width:48px;height:48px;font-size:18px">${esc((c.first||'?')[0].toUpperCase())}</span><div><h1 style="margin:0">${esc(c.first)} ${esc(c.last||'')}</h1><div class="muted">${esc(fmtPhone(phone))}</div></div></div><button class="close" data-close="1">✕</button></div>
+  <div class="stack">
+   <div class="kpis" style="margin:0"><div class="kpi"><div class="l">Заказов</div><div class="v">${os.length}</div></div><div class="kpi"><div class="l">Оплачено всего</div><div class="v">${money(sum)}</div></div><div class="kpi"><div class="l">Средний чек</div><div class="v">${money(os.length?sum/os.length:0)}</div></div></div>
+   <a class="btn wa block" href="${wa}" target="_blank" rel="noopener">Написать в WhatsApp</a>
+   <div class="card stack"><div class="grid2"><label class="f">Имя<input type="text" id="cF" value="${esc(c.first)}"></label><label class="f">Фамилия<input type="text" id="cL" value="${esc(c.last||'')}"></label></div>
+    <div class="grid2"><label class="f">Instagram<input type="text" id="cI" value="${esc(c.instagram||'')}"></label><label class="f">Бонусы, ₸<input type="number" id="cB" value="${+c.bonus||0}"></label></div>
+    <label class="f">Комментарий<textarea id="cC">${esc(c.comment||'')}</textarea></label>
+    ${S.canWrite?'<button class="btn dark block" id="cSave">Сохранить</button>':''}
+    <button class="btn block" id="cNew">Новый заказ для клиента</button></div>
+   <div class="card"><h3>История заказов</h3>${os.length?`<div class="stack" style="gap:8px">${os.map(o=>{const s=st(o.status);return`<div class="crow" style="box-shadow:none;border:1px solid var(--line)" data-o="${esc(o.id)}"><div><b>№${esc(o.number)} · ${esc(o.shoe?.brand||'')}</b><div class="small muted">${fmtDate(o.createdAt)} · ${esc(o.tariff||'')}</div></div><div style="text-align:right"><span class="pill ${s.c}">${s.n}</span><div class="small" style="margin-top:3px;font-weight:700">${money(o.total)}</div></div></div>`}).join('')}</div>`:'<span class="muted small">Заказов нет</span>'}</div>
+  </div>`,{client:phone});
+  $$('[data-o]').forEach(r=>r.onclick=()=>openOrder(r.dataset.o));
+  $('#cNew').onclick=()=>{S.form=blankForm({...splitPhone(phone),first:c.first||'',last:c.last||'',instagram:c.instagram||'',dirty:true});closeSheet();go('new')};
+  const sv=$('#cSave');if(sv)sv.onclick=async()=>{try{await S.db.doc('clients/'+phone).update({first:$('#cF').value.trim(),last:$('#cL').value.trim(),instagram:$('#cI').value.trim(),bonus:Math.max(0,Math.round(+$('#cB').value||0)),comment:$('#cC').value.trim(),updatedAt:Date.now()});toast('Клиент сохранён')}catch(e){handleWriteErr(e)}};
+}
+
+/* ===================== Касса и отчёты ===================== */
+function periodStart(p){const d=new Date();d.setHours(0,0,0,0);if(p==='week')d.setDate(d.getDate()-6);if(p==='month')d.setDate(1);return d.getTime()}
+function renderCash(){
+  const from=periodStart(S.period),c=cfg();
+  const orders=S.orders.filter(inPoint);
+  const pays=[];S.orders.forEach(o=>(o.payments||[]).forEach(p=>{if(p.at>=from&&(S.point==='__all'||(p.point||o.point)===S.point))pays.push({...p,o})}));
+  const rev=pays.reduce((a,p)=>a+(+p.amount||0),0);
+  const created=orders.filter(o=>o.createdAt>=from&&o.status!=='cancel');
+  const avg=created.length?created.reduce((a,o)=>a+(+o.total||0),0)/created.length:0;
+  const debt=orders.filter(o=>o.status!=='cancel').reduce((a,o)=>a+Math.max(0,(+o.total||0)-paid(o)),0);
+  const group=(arr,key,val)=>{const m={};arr.forEach(x=>{const k=key(x)||'—';m[k]=(m[k]||0)+val(x)});return Object.entries(m).sort((a,b)=>b[1]-a[1])};
+  const bars=(rows,fmt=money)=>{const mx=Math.max(1,...rows.map(r=>r[1]));return rows.length?`<div class="bars">${rows.map(([k,v])=>`<div class="bar"><div class="h"><span>${esc(k)}</span><span>${fmt(v)}</span></div><div class="tr"><i style="width:${Math.max(3,v/mx*100)}%"></i></div></div>`).join('')}</div>`:'<span class="muted small">Нет данных за период</span>'};
+  const doneP=S.orders.filter(o=>o.readyAt>=from&&o.status!=='cancel'&&(S.point==='__all'||o.point===S.point));
+  const byMaster=group(doneP,o=>o.master||'Не указан',()=>1);
+  $('#view').innerHTML=`<div class="row between"><h1>Касса</h1><span class="muted small">${S.point==='__all'?'все точки':esc(S.point)}</span></div>
+  <div class="seg section" id="per" style="max-width:420px"><button data-p="today" class="${S.period==='today'?'on':''}">Сегодня</button><button data-p="week" class="${S.period==='week'?'on':''}">7 дней</button><button data-p="month" class="${S.period==='month'?'on':''}">Месяц</button></div>
+  <div class="kpis"><div class="kpi"><div class="l">Выручка (оплаты)</div><div class="v">${money(rev)}</div></div>
+   <div class="kpi"><div class="l">Новых заказов</div><div class="v">${created.length}</div></div>
+   <div class="kpi"><div class="l">Средний чек</div><div class="v">${money(avg)}</div></div>
+   <div class="kpi"><div class="l">Долг клиентов (все)</div><div class="v" style="color:${debt>0?'var(--bad)':'inherit'}">${money(debt)}</div></div></div>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+   <div class="card"><h3>По способу оплаты</h3>${bars(group(pays,p=>p.method,p=>+p.amount||0))}</div>
+   <div class="card"><h3>По точкам</h3>${bars(group(pays,p=>p.point||p.o.point,p=>+p.amount||0))}</div>
+   <div class="card"><h3>Каналы продаж (новые заказы)</h3>${bars(group(created,o=>o.channel||'Не указан',()=>1),v=>v+' шт.')}</div>
+   <div class="card"><h3>Тарифы (новые заказы)</h3>${bars(group(created,o=>o.tariff,()=>1),v=>v+' шт.')}</div>
+   <div class="card"><h3>Мастера: готово пар и сдельная часть</h3>${bars(byMaster,v=>v+' пар · '+money(v*(+c.masterRate||0)))}
+     <div class="small muted" style="margin-top:8px">Ставка ${money(c.masterRate)} за пару${c.masterFixed?' + фикс '+money(c.masterFixed)+' в месяц':''}. Меняется в настройках.</div></div>
+  </div>
+  <div class="small muted" style="margin-top:12px">Считаются последние ${S.orders.length} заказов в базе.</div>`;
+  $('#per').onclick=e=>{const b=e.target.closest('button');if(!b)return;S.period=b.dataset.p;renderCash()};
+}
+
+/* ===================== Настройки ===================== */
+function renderSettings(){
+  const c=cfg();const ro=!S.canWrite||!S.db;
+  const lines=a=>a.join('\n');const priced=a=>a.map(x=>`${x.name} = ${x.price}`).join('\n');
+  $('#view').innerHTML=`<h1>Настройки</h1>
+  ${ro?'<div class="banner">Изменять настройки может только тот, у кого есть права на запись.</div>':''}
+  <div class="stack">
+  <div class="card stack"><h2>Прайс</h2>
+   <label class="f">Тарифы — по строке «НАЗВАНИЕ = цена»<textarea id="sT" rows="5">${esc(priced(c.tariffs))}</textarea></label>
+   <label class="f">Доп. услуги — «Название = цена»<textarea id="sS" rows="7">${esc(priced(c.services))}</textarea></label></div>
+  <div class="card stack"><h2>Точки и сотрудники</h2>
+   <label class="f">Точки — по одной в строке<textarea id="sP" rows="5">${esc(lines(c.points))}</textarea></label>
+   <div class="grid2"><label class="f">Мастера<textarea id="sM" rows="3">${esc(lines(c.masters))}</textarea></label>
+   <label class="f">Менеджеры<textarea id="sG" rows="3">${esc(lines(c.managers))}</textarea></label></div>
+   <div class="grid3"><label class="f">Боксов на точке<input type="number" id="sB" value="${+c.boxes||0}"></label>
+   <label class="f">Мастеру за пару, ₸<input type="number" id="sR" value="${+c.masterRate||0}"></label>
+   <label class="f">Фикс мастера, ₸<input type="number" id="sX" value="${+c.masterFixed||0}"></label></div></div>
+  <div class="card stack"><h2>Наряд-заказ</h2>
+   <div class="grid2"><label class="f">Название<input type="text" id="sCo" value="${esc(c.company)}"></label>
+   <label class="f">Телефон для клиентов<input type="text" id="sCp" value="${esc(c.companyPhone||'')}" placeholder="+7 7__ ___ __ __"></label></div>
+   <label class="f">Строка под названием (адрес, сайт, Instagram)<input type="text" id="sCi" value="${esc(c.companyInfo||'')}"></label>
+   <label class="f">Условия — каждый пункт с новой строки<textarea id="sTm" rows="7">${esc(lines(c.terms||[]))}</textarea></label></div>
+  <div class="card stack"><h2>Каналы продаж и бренды</h2>
+   <label class="f">Каналы — по одному в строке<textarea id="sC" rows="6">${esc(lines(c.channels))}</textarea></label>
+   <label class="f">Свои бренды (добавляются и автоматически при приёме)<textarea id="sE" rows="4">${esc(lines(c.extraBrands||[]))}</textarea></label>
+   <div class="small muted">В базе уже ${BRANDS_BASE.length} брендов: спорт, люкс, масс-маркет, трекинг и обувные марки.</div></div>
+  ${ro?'':'<button class="btn primary block" id="sSave">Сохранить настройки</button>'}
+  </div>`;
+  const b=$('#sSave');if(!b)return;
+  b.onclick=async()=>{
+    const L=id=>$(id).value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const P=id=>L(id).map(s=>{const m=s.split('=');return{name:m[0].trim(),price:Math.round(+String(m[1]||'0').replace(/\D/g,'')||0)}}).filter(x=>x.name);
+    const data={tariffs:P('#sT'),services:P('#sS'),points:L('#sP'),masters:L('#sM'),managers:L('#sG'),channels:L('#sC'),extraBrands:L('#sE'),
+      boxes:Math.max(0,Math.min(300,Math.round(+$('#sB').value||0))),masterRate:Math.round(+$('#sR').value||0),masterFixed:Math.round(+$('#sX').value||0),
+      company:$('#sCo').value.trim()||'Clean Republic',companyPhone:$('#sCp').value.trim(),companyInfo:$('#sCi').value.trim(),terms:L('#sTm')};
+    if(!data.tariffs.length||!data.points.length)return toast('Нужен хотя бы один тариф и одна точка');
+    b.disabled=true;try{await S.db.doc('config/main').set(data);toast('Настройки сохранены')}catch(e){handleWriteErr(e)}b.disabled=false};
+}
+</script>
+</body>
+</html>
