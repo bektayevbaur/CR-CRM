@@ -186,6 +186,10 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .hr{height:1px;background:var(--line);margin:4px 0}
 .paylist{display:flex;flex-direction:column;gap:6px;font-size:13.5px}
 .paylist div{display:flex;justify-content:space-between}
+.tabs[hidden]{display:none}
+.gate{max-width:440px;margin:8vh auto 0}
+.gate p{margin:0;line-height:1.5}
+code{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:13px}
 .tag{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:2px 8px;font-size:12px;font-weight:600;margin:2px 4px 2px 0}
 </style>
 </head>
@@ -195,7 +199,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
   <select id="pointSel" aria-label="Точка"></select>
 </header>
 <main id="view"></main>
-<nav class="tabs" id="tabs">
+<nav class="tabs" id="tabs" hidden>
   <button data-tab="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="10" rx="2"/></svg>Заказы</button>
   <button data-tab="clients"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M17 4a4 4 0 0 1 0 8M22 21c0-3-1.5-5-4-5.7"/></svg>Клиенты</button>
   <button data-tab="new" class="plus"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" style="width:20px;height:20px"><path d="M12 5v14M5 12h14"/></svg></span>Приём</button>
@@ -205,7 +209,8 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 <div id="sheet" class="sheet hidden"><div class="sheet-bg" data-close="1"></div><div class="sheet-body" id="sheetBody"></div></div>
 <div id="toast"></div>
 
-<script>
+<script type="module">
+import * as backend from './js/backend.js';
 /* ===================== Справочники по умолчанию ===================== */
 const DEFAULTS = {
   tariffs:[{name:'STANDARD',price:5990},{name:'PREMIUM',price:6990},{name:'FROST MODE',price:8990},{name:'EXTRA',price:0}],
@@ -259,40 +264,59 @@ function fmtLocal(cc,d){d=d.replace(/\D/g,'');if(cc==='7'){d=d.slice(0,10);retur
 const fmtPhone=d=>{if(!d)return'';const p=splitPhone(d);return p.cc?`+${p.cc} ${fmtLocal(p.cc,p.phone)}`:'+'+d};
 const fmtDate=t=>t?new Date(t).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
 const st=k=>STATUSES.find(s=>s.k===k)||STATUSES[0];
-const blob=id=>'/_blob/'+encodeURIComponent(id);
+/* Фото хранятся в базе (коллекция photos): <img> получает data-ph, а загрузчик подставляет картинку */
+const PH0='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+const phCache=new Map();
+const phImg=id=>`data-ph="${esc(id)}" src="${phCache.get(id)||PH0}"`;
+function loadPhotos(){if(!S.assets)return;$$('img[data-ph]:not([data-ok])').forEach(img=>{img.dataset.ok='1';const id=img.dataset.ph;
+  if(phCache.has(id)){img.src=phCache.get(id);return}
+  S.assets.get(id).then(u=>{if(u){phCache.set(id,u);img.src=u}}).catch(()=>{delete img.dataset.ok})})}
+new MutationObserver(loadPhotos).observe(document.body,{childList:true,subtree:true});
+async function prefetchPhotos(ids){await Promise.all(ids.map(id=>phCache.has(id)?0:S.assets.get(id).then(u=>{if(u)phCache.set(id,u)}).catch(()=>{})))}
 const tabId=Math.random().toString(36).slice(2);
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),2400)}
 function paid(o){return (o.payments||[]).reduce((a,p)=>a+(+p.amount||0),0)}
 function payState(o){const p=paid(o),t=+o.total||0;if(t<=0&&p<=0)return{k:'pay-ok',n:'Без оплаты'};if(p>=t)return{k:'pay-ok',n:'Оплачен'};if(p>0)return{k:'pay-part',n:'Частично'};return{k:'pay-no',n:'Не оплачен'}}
 
 /* ===================== Состояние ===================== */
-const S={db:null,assets:null,uid:null,canWrite:true,orders:[],clients:[],cfgDoc:{},tab:'orders',filter:'active',q:'',cq:'',
+const S={db:null,assets:null,downloads:null,signOut:null,me:null,isAdmin:false,demo:false,staff:[],uid:null,canWrite:true,orders:[],clients:[],cfgDoc:{},tab:'orders',filter:'active',q:'',cq:'',
   point:lsGet('cr_point')||'',period:'today',live:false,form:null};
 const cfg=()=>Object.assign({},DEFAULTS,S.cfgDoc||{});
 const brands=()=>[...new Set([...BRANDS_BASE,...(cfg().extraBrands||[])])].sort((a,b)=>a.localeCompare(b,'ru'));
 
 /* ===================== Подключение к базе ===================== */
-let loadTimer=setTimeout(()=>{if(!S.live){$('#sync').textContent='нет связи с базой';}},10000);
+let loadTimer=null;
+const GATE_LOGO=`<div class="row" style="gap:12px;flex-wrap:nowrap"><span class="logo" style="width:48px;height:48px;font-size:16px">CR</span><div><b style="font-size:18px">Clean Republic CRM</b><div class="muted small">химчистка и уход за обувью</div></div></div>`;
+function gate(html){$('#tabs').hidden=true;$('#view').innerHTML=`<div class="gate card stack">${GATE_LOGO}${html}</div>`}
+const gateUI={
+  needLogin(signIn){$('#sync').textContent='вход не выполнен';
+    gate(`<p>Войдите рабочим Google-аккаунтом, чтобы открыть CRM.</p><button class="btn primary block" id="gIn">Войти через Google</button>`);$('#gIn').onclick=signIn},
+  noAccess(email,signOut){$('#sync').textContent='нет доступа';
+    gate(`<p>Аккаунт <b>${esc(email)}</b> не добавлен в список сотрудников.</p><p class="muted small">Попросите администратора добавить этот email в «Настройки → Сотрудники», затем войдите снова.</p><button class="btn block" id="gOut">Войти другим аккаунтом</button>`);$('#gOut').onclick=signOut},
+  notConfigured(){$('#sync').textContent='база не настроена';
+    gate(`<p>База данных ещё не подключена: нужно заполнить файл <code>firebase-config.js</code> — инструкция в README.</p><a class="btn block" href="?demo">Открыть демо-режим</a><p class="muted small">В демо-режиме данные хранятся только до перезагрузки страницы.</p>`)},
+  error(m){toast(m)}
+};
 (async function init(){
-  renderPoints(); go(S.tab);
-  if(!window.claude||!claude.use){$('#sync').textContent='база недоступна';return}
-  const [db,user,assets]=await Promise.all([claude.use('db'),claude.use('user'),claude.use('assets')]);
-  S.db=db;S.assets=assets;
-  if(user){try{S.uid=await user.id()}catch(e){} try{const c=await user.can('data.write'); if(c===false)S.canWrite=false}catch(e){}}
-  S.ready=true;
-  if(!db){$('#sync').textContent='нет доступа к базе';clearTimeout(loadTimer);rerender();return}
-  rerender();
+  renderPoints(); gate('<p class="muted">Подключение…</p>');
+  let sess;try{sess=await backend.connect(gateUI)}catch(e){gate(`<p>Не удалось подключиться к базе.</p><p class="muted small">${esc(e&&(e.code||e.message)||'')}</p><button class="btn block" onclick="location.reload()">Повторить</button>`);return}
+  Object.assign(S,{db:sess.db,assets:sess.assets,downloads:sess.downloads,signOut:sess.signOut,me:sess.user,uid:sess.user.uid,isAdmin:sess.user.role==='admin',demo:sess.demo,ready:true});
+  const db=S.db;
+  if(S.demo){await db.doc('staff/'+sess.user.email).set({name:sess.user.name,role:'admin'});toast('Демо-режим: данные не сохраняются')}
+  $('#tabs').hidden=false;go(S.tab);
+  loadTimer=setTimeout(()=>{if(!S.live)$('#sync').textContent='нет связи с базой'},10000);
   db.doc('config/main').onSnapshot(s=>{S.cfgDoc=s.exists?s.data():{};renderPoints();if(S.tab==='new'&&!document.activeElement?.closest?.('#view'))rerender();else if(S.tab==='settings'&&!document.activeElement?.closest?.('#view'))rerender()},onErr);
   db.collection('orders').orderBy('createdAt','desc').limit(800).onSnapshot(s=>{
     S.orders=s.docs.map(d=>({id:d.id,...d.data()}));
-    if(!s.metadata.fromCache){S.live=true;clearTimeout(loadTimer);const el=$('#sync');el.textContent='● онлайн';el.className='on'}
+    if(!s.metadata.fromCache&&!S.live){S.live=true;clearTimeout(loadTimer);const el=$('#sync');el.textContent=S.demo?'● демо-режим':'● онлайн';el.className='on'}
     refresh();
   },onErr);
   db.collection('clients').orderBy('updatedAt','desc').limit(1000).onSnapshot(s=>{S.clients=s.docs.map(d=>({id:d.id,...d.data()}));refresh()},onErr);
+  if(S.isAdmin)db.collection('staff').onSnapshot(s=>{S.staff=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||a.id).localeCompare(b.name||b.id,'ru'));if(S.tab==='settings'&&!document.activeElement?.closest?.('#view'))rerender()},onErr);
 })();
 function rerender(){const y=window.scrollY;go(S.tab,true);window.scrollTo(0,y)}
-function dbBanner(){if(!S.ready||S.db)return'';return`<div class="banner">Нет подключения к базе данных, поэтому сохранять нельзя. Откройте приложение по ссылке в браузере или в приложении Claude, войдя в свой аккаунт. Сотрудникам нужен доступ уровня «Contributor» или выше.</div>`}
-function onErr(e){clearTimeout(loadTimer);$('#sync').textContent='ошибка базы: '+(e&&e.code||'');}
+function dbBanner(){if(!S.ready||S.db)return'';return`<div class="banner">Нет подключения к базе данных, поэтому сохранять нельзя. Обновите страницу и войдите рабочим Google-аккаунтом.</div>`}
+function onErr(e){clearTimeout(loadTimer);$('#sync').textContent='ошибка базы: '+(e&&e.code||'');console.error(e)}
 function refresh(){if(S.tab==='orders')renderOrders();else if(S.tab==='clients')renderClients();else if(S.tab==='cash')renderCash();
   const op=$('#sheetBody')?.dataset.order; if(op&&!$('#sheet').classList.contains('hidden'))openOrder(op,true);}
 
@@ -331,7 +355,7 @@ function renderOrders(){
 }
 function orderCard(o){const s=st(o.status),p=payState(o),ph=(o.photos||[])[0];
   return `<div class="ocard" data-id="${esc(o.id)}">
-    <div class="thumb">${ph?`<img loading="lazy" src="${blob(ph)}" alt="">`:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17h18v2H3zM3 17c0-3 1-5 4-6l4-3 3 2c2 1 5 1 7 3v4"/></svg>'}</div>
+    <div class="thumb">${ph?`<img loading="lazy" ${phImg(ph)} alt="">`:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17h18v2H3zM3 17c0-3 1-5 4-6l4-3 3 2c2 1 5 1 7 3v4"/></svg>'}</div>
     <div class="meta">
       <div class="row between" style="gap:6px"><span class="t">№${esc(o.number)} · ${esc(o.shoe?.brand||'—')}</span><span class="pill ${s.c}">${s.n}</span></div>
       <div class="s">${esc(o.clientName||'')} · ${esc(fmtPhone(o.clientPhone))}</div>
@@ -371,8 +395,8 @@ function openOrder(id,isRefresh){
       <div class="dirtbar">${[1,2,3,4,5].map(i=>`<i class="${i<=(o.dirt||0)?'f'+o.dirt:''}"></i>`).join('')}</div>
       ${(o.problems||[]).length?`<div style="margin-top:8px">${o.problems.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
     </div>
-    <div class="card"><h3>Фото до чистки</h3><div class="photos">${(o.photos||[]).map(ph=>`<div class="ph"><img src="${blob(ph)}" data-lb alt=""></div>`).join('')||'<span class="muted small">нет фото</span>'}</div>
-      <h3 style="margin-top:14px">Фото после чистки</h3><div class="photos" id="afterPh">${(o.photosAfter||[]).map(ph=>`<div class="ph"><img src="${blob(ph)}" data-lb alt=""></div>`).join('')}
+    <div class="card"><h3>Фото до чистки</h3><div class="photos">${(o.photos||[]).map(ph=>`<div class="ph"><img ${phImg(ph)} data-lb alt=""></div>`).join('')||'<span class="muted small">нет фото</span>'}</div>
+      <h3 style="margin-top:14px">Фото после чистки</h3><div class="photos" id="afterPh">${(o.photosAfter||[]).map(ph=>`<div class="ph"><img ${phImg(ph)} data-lb alt=""></div>`).join('')}
       ${S.assets&&S.canWrite&&(o.photosAfter||[]).length<MAX_PHOTOS?`<label class="addph"><input type="file" accept="image/*" multiple hidden id="afterIn"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Добавить</span></label>`:''}</div></div>
     <div class="card"><h3>Стоимость</h3>
       <dl class="kv"><dt>Тариф ${esc(o.tariff||'')}</dt><dd>${money(o.tariffPrice)}</dd>
@@ -418,7 +442,8 @@ function openOrder(id,isRefresh){
   }
 }
 async function upd(id,data,msg){try{await S.db.doc('orders/'+id).update(data);toast(msg)}catch(e){handleWriteErr(e)}}
-function handleWriteErr(e){const c=e&&e.code;if(c==='invalid_argument'){S.canWrite=false;toast('Нет прав на изменение')}else if(c==='quota_exceeded')toast('База заполнена: '+(e.message||''));else toast('Не сохранилось, попробуйте ещё раз')}
+function handleWriteErr(e){const c=e&&e.code;if(c==='permission-denied'||c==='invalid_argument'){toast('Нет прав на изменение')}else if(c==='resource-exhausted'||c==='quota_exceeded')toast('Превышен лимит базы на сегодня')
+  else if(c==='too-large')toast('Фото слишком большое');else if(c==='unavailable')toast('Нет интернета — не сохранилось');else if(c==='quota_exceeded')toast('База заполнена: '+(e.message||''));else toast('Не сохранилось, попробуйте ещё раз')}
 
 /* ===================== Приём заказа ===================== */
 function blankForm(prefill){return Object.assign({dirty:false,cc:'7',phone:'',first:'',last:'',instagram:'',clientExists:false,clientBonus:0,
@@ -468,7 +493,7 @@ function renderNew(){
 
   <div class="card stack"><div class="row between"><h2 style="margin:0">Фото обуви</h2>${S.assets?`<span class="pill st-new" id="phCount">0 из ${MAX_PHOTOS}</span>`:''}</div>
     ${S.assets?`<div class="photos" id="fPhotos"></div><div class="small muted">До ${MAX_PHOTOS} фото: нажмите на любую ячейку — можно снять камерой или выбрать сразу несколько из галереи.</div>`
-      :`<div class="small muted">${!S.ready?'Подключаюсь…':S.db?'Загрузка фото недоступна для вашего уровня доступа (нужен «Contributor» или выше).':'Фото станут доступны после подключения к базе.'}</div>`}
+      :`<div class="small muted">${!S.ready?'Подключаюсь…':S.db?'Загрузка фото недоступна.':'Фото станут доступны после подключения к базе.'}</div>`}
   </div>
 
   <div class="card stack"><h2>Загрязнённость</h2>
@@ -562,7 +587,7 @@ function lookupClient(fromTyping){
 function renderPhotos(){const el=$('#fPhotos');if(!el)return;const f=S.form;
   const used=f.photos.length+f.uploading,left=MAX_PHOTOS-used;
   const cnt=$('#phCount');if(cnt)cnt.textContent=`${f.photos.length} из ${MAX_PHOTOS}`;
-  el.innerHTML=f.photos.map((id,i)=>`<div class="ph"><img src="${blob(id)}" data-lb alt=""><button class="x" data-rm="${i}">✕</button></div>`).join('')
+  el.innerHTML=f.photos.map((id,i)=>`<div class="ph"><img ${phImg(id)} data-lb alt=""><button class="x" data-rm="${i}">✕</button></div>`).join('')
    +Array.from({length:f.uploading},()=>'<div class="ph loading">загрузка…</div>').join('')
    +Array.from({length:Math.max(0,left)},(_,i)=>`<label class="addph"><input type="file" accept="image/*" multiple hidden class="phIn"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>${PHOTO_HINTS[used+i]||'Фото'}</span></label>`).join('');
   $$('[data-lb]',el).forEach(i=>i.onclick=()=>lightbox(i.src));
@@ -579,13 +604,10 @@ function renderPhotos(){const el=$('#fPhotos');if(!el)return;const f=S.form;
       f.uploading--;renderPhotos()}));
   });
 }
-async function compress(file){try{const bmp=await createImageBitmap(file);const s=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+async function compress(file){try{const bmp=await createImageBitmap(file);const s=Math.min(1,1280/Math.max(bmp.width,bmp.height));
   const c=document.createElement('canvas');c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
-  return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',0.82))}catch(e){return file}}
-async function nextNumber(){const ref=S.db.doc('meta/counter');
-  for(let i=0;i<6;i++){try{const r=await ref.acquire({holder:S.uid||tabId,ttlMs:4000});
-    if(r.acquired){const s=await ref.get();const n=(s.exists?+s.data().n||0:0)+1;await ref.set({n});return n}}catch(e){}
-    await sleep(300+Math.random()*400)}
+  return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',0.8))}catch(e){return file}}
+async function nextNumber(){for(let i=0;i<4;i++){try{return await S.db.nextNumber()}catch(e){await sleep(300+Math.random()*400)}}
   return +String(Date.now()).slice(-6)}
 async function saveOrder(){
   const f=S.form,d=fullPhone(f.cc,f.phone),btn=$('#fSave');
@@ -649,7 +671,7 @@ function nzHTML(o){const c=cfg(),sh=o.shoe||{},due=Math.max(0,(+o.total||0)-paid
       <tr><td class="k">Загрязнённость</td><td class="v">${o.dirt||'—'} из 5 · ${esc(DIRT[o.dirt]||'')}<div class="dl">${[1,2,3,4,5].map(i=>`<i style="${i<=(o.dirt||0)?'background:'+['','#9bd3b5','#c9d77a','#f0c050','#ec8c3c','#d9493c'][o.dirt]:''}"></i>`).join('')}</div></td></tr></table></div>
     ${(o.problems||[]).length?`<div style="margin-top:6px"><span style="color:#777">Загрязнения и дефекты: </span><b>${esc(o.problems.join(', '))}</b></div>`:''}
     ${o.comment?`<div style="margin-top:4px"><span style="color:#777">Комментарий: </span>${esc(o.comment)}</div>`:''}
-    ${photos.length?`<div class="phs">${photos.map(id=>`<img src="${blob(id)}" crossorigin="anonymous" alt="">`).join('')}</div>`:''}
+    ${photos.length?`<div class="phs">${photos.map(id=>`<img ${phImg(id)} alt="">`).join('')}</div>`:''}
    </div>
    <div class="blk"><h4>Услуги и оплата</h4><table class="prices">
     <tr><td>Чистка, тариф ${esc(o.tariff||'')}</td><td class="r">${money(o.tariffPrice)}</td></tr>
@@ -670,7 +692,7 @@ function openNz(id,fallback){
   openSheet(`<div class="sheet-head"><div><h1 style="margin:0">Наряд-заказ</h1><div class="muted small">№ ${esc(o.number)}</div></div><button class="close" data-close="1">✕</button></div>
    <div class="stack">
     <div class="grid2"><button class="btn primary" id="nzPdf">Скачать PDF</button>${o.clientPhone?`<a class="btn wa" href="https://wa.me/${o.clientPhone}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">WhatsApp клиенту</a>`:''}</div>
-    <div class="small muted">На iPhone после «Скачать PDF» откроется меню «Поделиться» — оттуда файл можно сразу отправить в WhatsApp.</div>
+    <div class="small muted">На телефоне после «Скачать PDF» откроется меню «Поделиться» — оттуда файл можно сразу отправить в WhatsApp.</div>
     ${nzHTML(o)}
     <button class="btn ghost block" id="nzBack">← К заказу</button>
    </div>`,{order:''});
@@ -679,12 +701,13 @@ function openNz(id,fallback){
 }
 function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`))return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 async function makePdf(o,btn){
-  const dl=await claude.use('downloads');if(!dl)return toast('Скачивание недоступно в этом окне');
+  const dl=S.downloads;if(!dl)return toast('Скачивание недоступно');
   btn.disabled=true;const old=btn.textContent;btn.textContent='Готовлю PDF…';
   let wrap;
   try{
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    await prefetchPhotos((o.photos||[]).slice(0,6));
     wrap=document.createElement('div');wrap.id='nzCapture';wrap.innerHTML=nzHTML(o);document.body.appendChild(wrap);
     await Promise.all($$('img',wrap).map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})));
     if(document.fonts&&document.fonts.ready)await document.fonts.ready;
@@ -698,7 +721,7 @@ async function makePdf(o,btn){
       if(pg>0)pdf.addPage();pdf.addImage(part.toDataURL('image/jpeg',0.92),'JPEG',0,0,pw,part.height*pw/part.width);
     }
     const blobOut=pdf.output('blob');
-    await dl.save({filename:`Наряд-заказ ${o.number}.pdf`,data:blobOut});
+    await dl.save({filename:`CR-${o.number}.pdf`,data:blobOut});
   }catch(e){if(e&&e.code==='declined'){}else toast('PDF не получился'+(e&&e.message?': '+e.message:''))}
   finally{if(wrap)wrap.remove();btn.disabled=false;btn.textContent=old}
 }
@@ -774,11 +797,17 @@ function renderCash(){
 
 /* ===================== Настройки ===================== */
 function renderSettings(){
-  const c=cfg();const ro=!S.canWrite||!S.db;
+  const c=cfg();const ro=!S.isAdmin||!S.db;const me=S.me||{};
   const lines=a=>a.join('\n');const priced=a=>a.map(x=>`${x.name} = ${x.price}`).join('\n');
   $('#view').innerHTML=`<h1>Настройки</h1>
-  ${ro?'<div class="banner">Изменять настройки может только тот, у кого есть права на запись.</div>':''}
+  ${ro?'<div class="banner">Изменять настройки может только администратор.</div>':''}
   <div class="stack">
+  <div class="card"><div class="row between" style="flex-wrap:nowrap"><div style="min-width:0"><b>${esc(me.name||'')}</b><div class="small muted" style="overflow:hidden;text-overflow:ellipsis">${esc(me.email||'')} · ${S.isAdmin?'администратор':'сотрудник'}${S.demo?' · демо':''}</div></div><button class="btn" id="sOut">Выйти</button></div></div>
+  ${S.isAdmin?`<div class="card stack"><h2>Сотрудники</h2><div class="small muted">Войти в CRM могут только эти Google-аккаунты. Администратор также меняет настройки и список сотрудников.</div>
+   <div class="stack" style="gap:8px">${S.staff.map(p=>`<div class="svc" style="cursor:default"><span style="min-width:0"><b>${esc(p.name||p.id)}</b><div class="small muted">${esc(p.id)} · ${p.role==='admin'?'администратор':'сотрудник'}</div></span>${p.id===me.email?'<span class="small muted">это вы</span>':`<button class="btn ghost" data-rmstaff="${esc(p.id)}" style="padding:6px 10px">Удалить</button>`}</div>`).join('')||'<span class="muted small">Загрузка…</span>'}</div>
+   <div class="grid3"><label class="f">Email (Google)<input type="text" id="stE" inputmode="email" placeholder="name@gmail.com" autocomplete="off"></label><label class="f">Имя<input type="text" id="stN" autocomplete="off"></label>
+   <label class="f">Роль<select id="stR"><option value="staff">Сотрудник</option><option value="admin">Администратор</option></select></label></div>
+   <button class="btn dark block" id="stAdd">Добавить сотрудника</button></div>`:''}
   <div class="card stack"><h2>Прайс</h2>
    <label class="f">Тарифы — по строке «НАЗВАНИЕ = цена»<textarea id="sT" rows="5">${esc(priced(c.tariffs))}</textarea></label>
    <label class="f">Доп. услуги — «Название = цена»<textarea id="sS" rows="7">${esc(priced(c.services))}</textarea></label></div>
@@ -800,6 +829,12 @@ function renderSettings(){
    <div class="small muted">В базе уже ${BRANDS_BASE.length} брендов: спорт, люкс, масс-маркет, трекинг и обувные марки.</div></div>
   ${ro?'':'<button class="btn primary block" id="sSave">Сохранить настройки</button>'}
   </div>`;
+  $('#sOut').onclick=()=>S.signOut&&S.signOut();
+  const sa=$('#stAdd');if(sa)sa.onclick=async()=>{const email=$('#stE').value.trim().toLowerCase(),name=$('#stN').value.trim(),role=$('#stR').value;
+    if(!/^[^\s@\/]+@[^\s@\/]+\.[^\s@\/]+$/.test(email))return toast('Проверьте email');
+    sa.disabled=true;try{await S.db.doc('staff/'+email).set({name,role,addedAt:Date.now(),addedBy:me.email||''});toast('Сотрудник добавлен');rerender()}catch(e){handleWriteErr(e);sa.disabled=false}};
+  $$('[data-rmstaff]').forEach(x=>x.onclick=async()=>{const id=x.dataset.rmstaff;if(!confirm('Удалить доступ для '+id+'?'))return;
+    try{await S.db.doc('staff/'+id).delete();toast('Доступ удалён');rerender()}catch(e){handleWriteErr(e)}});
   const b=$('#sSave');if(!b)return;
   b.onclick=async()=>{
     const L=id=>$(id).value.split('\n').map(s=>s.trim()).filter(Boolean);

@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// Clean Republic CRM — правила доступа Firestore.
+// Работать с базой могут только сотрудники: документ staff/<email в нижнем регистре>.
+// Настройки (config) и список сотрудников (staff) меняет только роль "admin".
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function staffDoc() { return /databases/$(database)/documents/staff/$(myEmail()); }
+    function isStaff() { return signedIn() && exists(staffDoc()); }
+    function isAdmin() { return isStaff() && get(staffDoc()).data.role == 'admin'; }
+
+    match /staff/{email} {
+      allow get: if signedIn() && email == myEmail();
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
+    match /config/{id} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
+    match /{coll}/{id} {
+      allow read, write: if isStaff() && coll in ['orders', 'clients', 'photos', 'meta'];
+    }
+  }
+}
