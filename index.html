@@ -267,10 +267,14 @@ const st=k=>STATUSES.find(s=>s.k===k)||STATUSES[0];
 /* Фото хранятся в базе (коллекция photos): <img> получает data-ph, а загрузчик подставляет картинку */
 const PH0='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 const phCache=new Map();
-const phImg=id=>`data-ph="${esc(id)}" src="${phCache.get(id)||PH0}"`;
-function loadPhotos(){if(!S.assets)return;$$('img[data-ph]:not([data-ok])').forEach(img=>{img.dataset.ok='1';const id=img.dataset.ph;
-  if(phCache.has(id)){img.src=phCache.get(id);return}
-  S.assets.get(id).then(u=>{if(u){phCache.set(id,u);img.src=u}}).catch(()=>{delete img.dataset.ok})})}
+/* small=true — лёгкое превью для списков; полное фото грузится только для PDF и просмотра */
+const phKey=(id,sm)=>sm?id+'|s':id;
+const phImg=(id,sm)=>`data-ph="${esc(id)}"${sm?' data-sm="1"':''} src="${phCache.get(phKey(id,sm))||phCache.get(id)||PH0}"`;
+function fetchPhoto(img){const id=img.dataset.ph,sm=!!img.dataset.sm,k=phKey(id,sm);
+  if(phCache.has(k)){img.src=phCache.get(k);return}
+  S.assets.get(id,sm).then(u=>{if(u){phCache.set(k,u);img.src=u}}).catch(()=>{delete img.dataset.ok})}
+const phIO='IntersectionObserver' in window?new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){phIO.unobserve(e.target);fetchPhoto(e.target)}}),{rootMargin:'300px'}):null;
+function loadPhotos(){if(!S.assets)return;$$('img[data-ph]:not([data-ok])').forEach(img=>{img.dataset.ok='1';phIO?phIO.observe(img):fetchPhoto(img)})}
 new MutationObserver(loadPhotos).observe(document.body,{childList:true,subtree:true});
 async function prefetchPhotos(ids){await Promise.all(ids.map(id=>phCache.has(id)?0:S.assets.get(id).then(u=>{if(u)phCache.set(id,u)}).catch(()=>{})))}
 const tabId=Math.random().toString(36).slice(2);
@@ -360,7 +364,7 @@ function renderOrders(){
 }
 function orderCard(o){const s=st(o.status),p=payState(o),ph=(o.photos||[])[0];
   return `<div class="ocard" data-id="${esc(o.id)}">
-    <div class="thumb">${ph?`<img loading="lazy" ${phImg(ph)} alt="">`:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17h18v2H3zM3 17c0-3 1-5 4-6l4-3 3 2c2 1 5 1 7 3v4"/></svg>'}</div>
+    <div class="thumb">${ph?`<img ${phImg(ph,true)} alt="">`:'<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17h18v2H3zM3 17c0-3 1-5 4-6l4-3 3 2c2 1 5 1 7 3v4"/></svg>'}</div>
     <div class="meta">
       <div class="row between" style="gap:6px"><span class="t">№${esc(o.number)} · ${esc(o.shoe?.brand||'—')}</span><span class="pill ${s.c}">${s.n}</span></div>
       <div class="s">${esc(o.clientName||'')} · ${esc(fmtPhone(o.clientPhone))}</div>
@@ -372,7 +376,8 @@ function orderCard(o){const s=st(o.status),p=payState(o),ph=(o.photos||[])[0];
 function openSheet(html,attrs={}){const b=$('#sheetBody');b.innerHTML=html;b.dataset.order=attrs.order||'';b.dataset.client=attrs.client||'';$('#sheet').classList.remove('hidden');document.body.style.overflow='hidden'}
 function closeSheet(){$('#sheet').classList.add('hidden');$('#sheetBody').dataset.order='';document.body.style.overflow=''}
 $('#sheet').addEventListener('click',e=>{if(e.target.dataset.close)closeSheet()});
-function lightbox(src){const d=document.createElement('div');d.className='lightbox';d.innerHTML=`<img src="${src}" alt="">`;d.onclick=()=>d.remove();document.body.appendChild(d)}
+function lightbox(img){const d=document.createElement('div');d.className='lightbox';d.innerHTML=`<img src="${img.src}" alt="">`;d.onclick=()=>d.remove();document.body.appendChild(d);
+  const id=img.dataset.ph;if(id&&S.assets)S.assets.get(id).then(u=>{if(u){phCache.set(id,u);const big=$('img',d);if(big)big.src=u}}).catch(()=>{})}
 
 function openOrder(id,isRefresh){
   const o=S.orders.find(x=>x.id===id);if(!o){if(!isRefresh)toast('Заказ не найден');return}
@@ -400,8 +405,8 @@ function openOrder(id,isRefresh){
       <div class="dirtbar">${[1,2,3,4,5].map(i=>`<i class="${i<=(o.dirt||0)?'f'+o.dirt:''}"></i>`).join('')}</div>
       ${(o.problems||[]).length?`<div style="margin-top:8px">${o.problems.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
     </div>
-    <div class="card"><h3>Фото до чистки</h3><div class="photos">${(o.photos||[]).map(ph=>`<div class="ph"><img ${phImg(ph)} data-lb alt=""></div>`).join('')||'<span class="muted small">нет фото</span>'}</div>
-      <h3 style="margin-top:14px">Фото после чистки</h3><div class="photos" id="afterPh">${(o.photosAfter||[]).map(ph=>`<div class="ph"><img ${phImg(ph)} data-lb alt=""></div>`).join('')}
+    <div class="card"><h3>Фото до чистки</h3><div class="photos">${(o.photos||[]).map(ph=>`<div class="ph"><img ${phImg(ph,true)} data-lb alt=""></div>`).join('')||'<span class="muted small">нет фото</span>'}</div>
+      <h3 style="margin-top:14px">Фото после чистки</h3><div class="photos" id="afterPh">${(o.photosAfter||[]).map(ph=>`<div class="ph"><img ${phImg(ph,true)} data-lb alt=""></div>`).join('')}
       ${S.assets&&S.canWrite&&(o.photosAfter||[]).length<MAX_PHOTOS?`<label class="addph"><input type="file" accept="image/*" multiple hidden id="afterIn"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Добавить</span></label>`:''}</div></div>
     <div class="card"><h3>Стоимость</h3>
       <dl class="kv"><dt>Тариф ${esc(o.tariff||'')}</dt><dd>${money(o.tariffPrice)}</dd>
@@ -429,7 +434,7 @@ function openOrder(id,isRefresh){
     <div class="small muted" style="text-align:center">Создан ${fmtDate(o.createdAt)}${o.readyAt?' · готов '+fmtDate(o.readyAt):''}${o.issuedAt?' · выдан '+fmtDate(o.issuedAt):''}</div>
   </div>`,{order:id});
   body.scrollTop=keepScroll;
-  $$('[data-lb]',body).forEach(i=>i.onclick=()=>lightbox(i.src));
+  $$('[data-lb]',body).forEach(i=>i.onclick=()=>lightbox(i));
   $('#toClient').onclick=()=>openClient(o.clientPhone);
   $('#toNz').onclick=()=>openNz(o.id);
   if(S.canWrite){
@@ -592,10 +597,10 @@ function lookupClient(fromTyping){
 function renderPhotos(){const el=$('#fPhotos');if(!el)return;const f=S.form;
   const used=f.photos.length+f.uploading,left=MAX_PHOTOS-used;
   const cnt=$('#phCount');if(cnt)cnt.textContent=`${f.photos.length} из ${MAX_PHOTOS}`;
-  el.innerHTML=f.photos.map((id,i)=>`<div class="ph"><img ${phImg(id)} data-lb alt=""><button class="x" data-rm="${i}">✕</button></div>`).join('')
+  el.innerHTML=f.photos.map((id,i)=>`<div class="ph"><img ${phImg(id,true)} data-lb alt=""><button class="x" data-rm="${i}">✕</button></div>`).join('')
    +Array.from({length:f.uploading},()=>'<div class="ph loading">загрузка…</div>').join('')
    +Array.from({length:Math.max(0,left)},(_,i)=>`<label class="addph"><input type="file" accept="image/*" multiple hidden class="phIn"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>${PHOTO_HINTS[used+i]||'Фото'}</span></label>`).join('');
-  $$('[data-lb]',el).forEach(i=>i.onclick=()=>lightbox(i.src));
+  $$('[data-lb]',el).forEach(i=>i.onclick=()=>lightbox(i));
   $$('[data-rm]',el).forEach(b=>b.onclick=()=>{f.photos.splice(+b.dataset.rm,1);renderPhotos()});
   $$('.phIn',el).forEach(inp=>inp.onchange=async e=>{
     let files=[...e.target.files];if(!files.length)return;
@@ -697,7 +702,7 @@ function openNz(id,fallback){
   openSheet(`<div class="sheet-head"><div><h1 style="margin:0">Наряд-заказ</h1><div class="muted small">№ ${esc(o.number)}</div></div><button class="close" data-close="1">✕</button></div>
    <div class="stack">
     <div class="grid2"><button class="btn primary" id="nzPdf">Скачать PDF</button>${o.clientPhone?`<a class="btn wa" href="https://wa.me/${o.clientPhone}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">WhatsApp клиенту</a>`:''}</div>
-    <div class="small muted">На телефоне после «Скачать PDF» откроется меню «Поделиться» — оттуда файл можно сразу отправить в WhatsApp.</div>
+    <div class="small muted">На телефоне откроется меню «Поделиться» (иногда кнопку нужно нажать второй раз — она станет «Отправить PDF») — оттуда файл можно сразу отправить в WhatsApp.</div>
     ${nzHTML(o)}
     <button class="btn ghost block" id="nzBack">← К заказу</button>
    </div>`,{order:''});
@@ -708,7 +713,7 @@ function loadScript(src){return new Promise((res,rej)=>{if(document.querySelecto
 async function makePdf(o,btn){
   const dl=S.downloads;if(!dl)return toast('Скачивание недоступно');
   btn.disabled=true;const old=btn.textContent;btn.textContent='Готовлю PDF…';
-  let wrap;
+  let wrap,keep=false;
   try{
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
@@ -727,8 +732,11 @@ async function makePdf(o,btn){
     }
     const blobOut=pdf.output('blob');
     await dl.save({filename:`CR-${o.number}.pdf`,data:blobOut});
-  }catch(e){if(e&&e.code==='declined'){}else toast('PDF не получился'+(e&&e.message?': '+e.message:''))}
-  finally{if(wrap)wrap.remove();btn.disabled=false;btn.textContent=old}
+  }catch(e){
+    if(e&&e.code==='needs-tap'){keep=true;btn.disabled=false;btn.textContent='📤 Отправить PDF';toast('PDF готов — нажмите «Отправить PDF»');
+      btn.onclick=async()=>{try{await e.share()}catch(_){}}}
+    else if(e&&e.code==='declined'){}else toast('PDF не получился'+(e&&e.message?': '+e.message:''))}
+  finally{if(wrap)wrap.remove();if(!keep){btn.disabled=false;btn.textContent=old}}
 }
 
 /* ===================== Клиенты ===================== */
