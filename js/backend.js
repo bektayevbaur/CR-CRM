@@ -28,12 +28,27 @@ async function shrink(blob) {
   }
   throw Object.assign(new Error('фото слишком большое'), { code: 'too-large' });
 }
+/** Превью ~300px (~15–30 КБ) для списков, чтобы не качать полные фото */
+async function thumb(blob) {
+  const bmp = await createImageBitmap(blob);
+  const s = Math.min(1, 300 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', .72);
+}
+const THUMB = '-t'; // превью хранится рядом: photos/<id>-t
+const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
 const downloads = {
   async save({ filename, data }) {
     const file = new File([data], filename, { type: data.type || 'application/pdf' });
-    if (navigator.canShare && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && navigator.canShare({ files: [file] })) {
+    if (isMobile() && navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], title: filename }); return; }
-      catch (e) { if (e && e.name === 'AbortError') throw Object.assign(e, { code: 'declined' }); }
+      catch (e) {
+        if (e && e.name === 'AbortError') throw Object.assign(e, { code: 'declined' });
+        // iOS забывает нажатие, пока PDF собирается: просим нажать ещё раз
+        if (e && e.name === 'NotAllowedError') throw Object.assign(new Error('нужно нажать ещё раз'), { code: 'needs-tap',
+          share: () => navigator.share({ files: [file], title: filename }) });
+      }
     }
     const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = filename;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30_000);
@@ -76,14 +91,21 @@ async function firebaseSession(ui) {
   const cache = new Map();
   const assets = {
     async upload(blob) {
-      const data = await shrink(blob); const r = F.doc(F.collection(fs, 'photos'));
-      await F.setDoc(r, { data, createdAt: Date.now(), by: auth.currentUser?.uid || '' });
-      cache.set(r.id, Promise.resolve(data)); return { id: r.id };
+      const [data, small] = await Promise.all([shrink(blob), thumb(blob).catch(() => null)]);
+      const r = F.doc(F.collection(fs, 'photos')); const meta = { createdAt: Date.now(), by: auth.currentUser?.uid || '' };
+      const batch = F.writeBatch(fs); batch.set(r, { data, ...meta });
+      if (small) batch.set(F.doc(fs, 'photos', r.id + THUMB), { data: small, ...meta });
+      await batch.commit();
+      cache.set(r.id, Promise.resolve(data)); if (small) cache.set(r.id + THUMB, Promise.resolve(small));
+      return { id: r.id };
     },
-    get(id) {
-      if (!cache.has(id)) cache.set(id, F.getDoc(F.doc(fs, 'photos', id)).then(s => s.exists() ? s.data().data : null)
-        .catch(e => { cache.delete(id); throw e; }));
-      return cache.get(id);
+    /** small=true — превью; если превью нет (старые фото), берётся полное */
+    get(id, small) {
+      const key = small ? id + THUMB : id;
+      if (!cache.has(key)) cache.set(key, F.getDoc(F.doc(fs, 'photos', key)).then(s => s.exists() ? s.data().data : null)
+        .then(u => u || (small ? assets.get(id) : null))
+        .catch(e => { cache.delete(key); throw e; }));
+      return cache.get(key);
     },
   };
 
@@ -103,9 +125,10 @@ async function firebaseSession(ui) {
       if (started) { location.reload(); return; }       // вышли или сменили аккаунт
       if (!user) return ui.needLogin(signIn);
       const email = (user.email || '').toLowerCase();
-      let staff = null;
-      try { const s = await F.getDoc(F.doc(fs, 'staff', email)); staff = s.exists() ? s.data() : null; } catch (e) { staff = null; }
-      if (!staff) return ui.noAccess(email, signOut);
+      let staff = null, reason = 'not-in-staff';
+      try { const s = await F.getDoc(F.doc(fs, 'staff', email)); staff = s.exists() ? s.data() : null; }
+      catch (e) { reason = e.code || 'error'; console.error(e); }
+      if (!staff) return ui.noAccess(email, signOut, reason);
       started = true;
       resolve({ db, assets, downloads, signOut, demo: false,
         user: { uid: user.uid, email, name: staff.name || user.displayName || email, role: staff.role === 'admin' ? 'admin' : 'staff' } });
@@ -149,8 +172,8 @@ function demoSession() {
     user: { uid: 'demo', email: 'demo@example.com', name: 'Демо', role: 'admin' },
     db: { doc: ref, collection: col, nextNumber: async () => ++counter },
     assets: {
-      async upload(blob) { const id = rid(); photos.set(id, await shrink(blob)); return { id }; },
-      async get(id) { return photos.get(id) || null; },
+      async upload(blob) { const id = rid(); photos.set(id, await shrink(blob)); photos.set(id + THUMB, await thumb(blob)); return { id }; },
+      async get(id, small) { return (small && photos.get(id + THUMB)) || photos.get(id) || null; },
     },
   });
 }
